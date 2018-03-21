@@ -1,0 +1,14 @@
+% int atoi(char*);
+i atoi s
+
+% void test(int);
+v test i
+
+% void cap(void);
+v cap
+
+% void loop(void); // loop forever
+v loop
+
+% void toall(char *msg); // send message to all another clients
+v toall s

@@ -1,0 +1,18 @@
+% int print(char*);
+i print s
+
+% char *my_func(char*, int, double, char**);
+s my_func s i d S
+
+% int my_calc(double, char**, int*, float);
+i my_calc d S I f
+
+% void my_void_func(double*);
+v my_void_func D
+
+% void my_mega_void();
+v my_mega_void
+
+% int test(int, char**);
+i test i S
+

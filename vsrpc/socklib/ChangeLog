@@ -1,0 +1,73 @@
+ChangeLog for TCP/UDP sockets library "socklib".
+ + added
+ - removed
+ * changed
+
+2015.09.05 [grinkov]
+ + add sl_select_ex() for may mask/unmask signal interrupt
+ * update some UDP functions
+
+2015.09.04 [grinkov]
+ * fix some UDP functions
+
+2015.09.03 [grinkov]
+ + add sl_udp_make_server_socket_ex()
+ + add sl_gethostbyname() simple wrapper
+
+2015.02.02 [grinkov]
+ * update sl_error_str(), correct sl_select() description
+ * format text
+ * allways use select() instead of poll() under Windows
+ * version 0.12
+
+2015.02.01 [grinkov]
+ * format text 
+
+<-- *** -->
+
+2009.08.21 [shmigirilov]
+ * fix typecast warnings in g++
+
+2009.02.12 [shmigirilov]
+ * fix socklen in sl_udp_read()
+ * remove "typedef int socklen_t;" from "socklib.h" under WIN32
+ * add function sl_get_last_error()
+ * some code indenting
+ * typecast return value of socket() to int (no warnings on VC)
+ * remove warnings on Borland C++ Builder
+ * version 0.10
+
+2009.01.31 [grinkov]
+ * comment "typedef int socklen_t;" line under WIN32
+
+2008.08.19 [petrov]
+ * added inet_addr(host) to sl_connect_to_server
+ * removed gethostbyname(host) from sl_udp_sendto_addr()
+ 
+2008.04.05 [grinkov]
+ * extract socklib from VSRPC
+ * version 0.9
+
+2008.04.04 [shmigirilov]
+ + add sl_disconnect()
+ + add sl_udp_read_to() - UDP read with timeout
+ + add error codes consts and sl_error_str() function
+ * rename win32 macros to SL_WIN32
+
+2008.03.26 [grinkov]
+ * fix bug in sl_accept (fill "addrlen" befor call accept)
+
+2008.03.23 [shmigirilov]
+ * typecast to (char *) in recvfrom() on win32
+ + htonl() and others wrappers
+
+2008.03.19 [shmigirilov]
+ * no sin_len on linux, typecast (socklen_t *)
+
+2008.03.18 [shmigirilov]
+ + UDP functions
+
+2006.06.28 [grinkov]
+ + add sl_read_all_to()
+
+

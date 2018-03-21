@@ -32,7 +32,11 @@ typedef unsigned short u16_t;
 typedef          short i16_t;
 typedef unsigned long  u32_t;
 typedef          long  i32_t;
-//typedef u8_t bool;
+//----------------------------------------------------------------------------
+// bool type
+typedef u8_t bool;
+#define true  1
+#define false 0
 //----------------------------------------------------------------------------
 // float types
 typedef float f32_t;
@@ -51,7 +55,7 @@ typedef struct sx127x_pars_common_ {
 //----------------------------------------------------------------------------
 // LoRaTM mode SX127x configuration
 typedef struct sx127x_pars_lora_ {
-  u16_t bw;         // Bandwith [100Hz]: 78...5000 (example: 1250 -> 125 kHz)
+  u32_t bw;         // Bandwith [Hz]: 7800...500000 (125000 -> 125 kHz)
    u8_t sf;         // Spreading Facror: 6..12
    u8_t cr;         // Code Rate: 5...8
    i8_t ldro;       // Low Data Rate Optimize: 1 - on, 0 - off, -1 - automatic
@@ -67,8 +71,8 @@ typedef struct sx127x_pars_lora_ {
 typedef struct sx127x_pars_fskook_ {
   u16_t bitrate; // bitrate [bit/s] (4800 bit/s for example)
   u16_t fdev;    // frequency deviation [Hz] (5000 Hz for example)
-  u16_t rx_bw;   // RX  bandwidth [100Hz]: 26...2500 kHz (104 -> 10.4 kHz)
-  u16_t afc_bw;  // AFC bandwidth [100Hz]: 26...2500 kHz (26 -> 2.6 kHz)
+  u32_t rx_bw;   // RX  bandwidth [Hz]: 2600...250000 kHz (10400 -> 10.4 kHz)
+  u32_t afc_bw;  // AFC bandwidth [Hz]: 2600...250000 kHz (2600  ->  2.6 kHz)
    u8_t afc;     // AFC on/off: 0 - off, 1 - on
    u8_t fixed;   // 0 - variable packet size, 1 - fixed packet size
    u8_t dcfree;  // DC free method: 0 - None, 1 - Manchester, 2 - Whitening
@@ -85,10 +89,8 @@ extern "C"
 {
 #endif // __cplusplus
 //----------------------------------------------------------------------------
-int sx127x_init(sx127x_t *self,
-                const char *device, // filename like "/dev/spidev0.0"
-                int mode,           // SPI_* (look "linux/spi/spidev.h")
-                int speed);         // max speed [Hz]
+int sx127x_init(sx127x_t *self);
+                
 //----------------------------------------------------------------------------
 void sx127x_free(sx127x_t *self);
 //----------------------------------------------------------------------------

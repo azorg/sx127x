@@ -1,0 +1,22 @@
+Very Simple Remote Procedure Call (VSRPC) project
+Version: 0.9
+Licensed by BSD
+Autors: Alex Grinkov <a.grinkov@gmail.com>,
+        Anton Shmigigilov <shmigirilov@gmail.com>
+
+modules:
+  vsrpc.c/vsrpc.h - VSRPC core
+  socklib/*.c/*.h - simple wrappers for work with UNIX-like TCP/IP sockets
+  vstcpd.c/vstcpd.h - Very Simple TCP/IP Deamon based on VSRPC
+  vstcpc.c/vstcpc.h - Very Simple TCP/IP client on VSRPC
+  vsfifo.c/vsfifo.h - Very Simple FIFO
+  vsthread.c/vsthread.h - Very Simple thread implementation (under POSIX)
+  vstcps.c/vstcps.h - Very Simple TCP/IP Deamon based on treads (without VSRPC)
+
+files:
+  README - this file
+  ChangeLog - log of changes
+  vsrpc_idl.sh - generate from *.vsidl files C source of wrappers
+  simple.vsidl.txt - help file about VSIDL syntax
+  test - unit tests
+

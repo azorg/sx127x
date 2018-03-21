@@ -1,0 +1,48 @@
+%
+% Example of Very Simple Interface Description Lanuage (VSIDL)
+% Use this format for ./vsrpc_idl.sh script input file(s)
+%
+% "%" - is a comment to end of line.
+%
+% Every string is "prototype" of one funcion:
+%   ReturType FunctionName TypeArg1 TypeArg2 TypeArg3
+%
+% Avaible ReturnType (type of return value) are:
+%   v - nothing (void)
+%   i - integer (int)
+%   f - float (float)
+%   d - double (double)
+%   s - zero returned string (char *) allocated by vsrpc_malloc()
+%       and must free by vsrpc_free() past use
+%
+% Avaible TypeArgN (type of each argument) are:
+%   input for function:
+%     i - integer (int)
+%     f - float (float)
+%     d - double (double)
+%     s - constant zero return string (const char *),
+%         function can't modify then
+%   output from function:
+%     I - integer return value (int *)
+%     F - float return value (float *)
+%     D - double return value (double *)
+%     S - zero returned string (char **) allocated by vsrpc_malloc()
+%         in function and must free by vsrpc_free()
+%       
+% Thats all!
+
+% char *my_func(char*, int, double, char**);
+s my_func s i d S
+
+% int my_calc(double, char**, int*, float);
+i my_calc d S I f
+
+% void my_void_func(double*);
+v my_void_func D
+
+% void my_mega_void();
+v my_mega_void
+
+% int test(int, char**);
+i test i S
+

@@ -7,7 +7,7 @@
 #ifndef SX127X_H
 #define SX127X_H
 //-----------------------------------------------------------------------------
-// RADIO class mode
+// SX127x class mode
 #define SX127X_LORA 0
 #define SX127X_FSK  1
 #define SX127X_OOK  2
@@ -25,9 +25,59 @@
 #  define SX127X_DBG(fmt, ...) // debug output off
 #endif // SX127X_DEBUG
 //----------------------------------------------------------------------------
-// `spi_t` type structure
+// integer types
+typedef unsigned char   u8_t;
+typedef          char   i8_t;
+typedef unsigned short u16_t;
+typedef          short i16_t;
+typedef unsigned long  u32_t;
+typedef          long  i32_t;
+//typedef u8_t bool;
+//----------------------------------------------------------------------------
+// float types
+typedef float f32_t;
+//typedef double f64_t;
+//----------------------------------------------------------------------------
+// common SX127x configuration
+typedef struct sx127x_pars_common_ {
+   u8_t mode;       // mode: 0 - LoRa, 1 - FSK, 2 - OOK
+  u32_t freq;       // frequency [Hz] (434000000 -> 434 MHz)
+   u8_t out_power;  // `OutputPower` level 0...15
+   u8_t max_power;  // `MaxPower` parametr 0...7 (7 by default)
+   bool pa_boost;   // true - use PA_BOOT out pin, false - use RFO out pin
+   bool high_power; // if true then add +3 dB to power on PA_BOOST output pin
+   bool crc;        // CRC in packet modes false - off, true - on
+} sx127x_pars_common_t;
+//----------------------------------------------------------------------------
+// LoRaTM mode SX127x configuration
+typedef struct sx127x_pars_lora_ {
+  u16_t bw;         // Bandwith [100Hz]: 78...5000 (example: 1250 -> 125 kHz)
+   u8_t sf;         // Spreading Facror: 6..12
+   u8_t cr;         // Code Rate: 5...8
+   i8_t ldro;       // Low Data Rate Optimize: 1 - on, 0 - off, -1 - automatic
+   u8_t sw;         // Sync Word (allways 0x12)
+  u16_t preamble;   // Size of preamble: 6...65535 (8 by default)
+   bool impl_hdr;   // Implicit Header off/on
+   //bool rx_single;  // `RsSinleOn`
+   //bool freq_hop;   // `FreqHopOn`
+   //u8_t hop_period; // `HopPeriod`                 
+} sx127x_pars_lora_t;
+//----------------------------------------------------------------------------
+// FSK/OOK mode SX127x configuration
+typedef struct sx127x_pars_fskook_ {
+  u16_t bitrate; // bitrate [bit/s] (4800 bit/s for example)
+  u16_t fdev;    // frequency deviation [Hz] (5000 Hz for example)
+  u16_t rx_bw;   // RX  bandwidth [100Hz]: 26...2500 kHz (104 -> 10.4 kHz)
+  u16_t afc_bw;  // AFC bandwidth [100Hz]: 26...2500 kHz (26 -> 2.6 kHz)
+   u8_t afc;     // AFC on/off: 0 - off, 1 - on
+   u8_t fixed;   // 0 - variable packet size, 1 - fixed packet size
+   u8_t dcfree;  // DC free method: 0 - None, 1 - Manchester, 2 - Whitening
+} sx127x_pars_fskook_t;
+//----------------------------------------------------------------------------
+// SX127x class pivate data
 typedef struct sx127x_ {
-  int   i; //!!!
+  u32_t freq; // frequency [Hz] (434000000 -> 434 MHz)
+
 } sx127x_t;
 //----------------------------------------------------------------------------
 #ifdef __cplusplus

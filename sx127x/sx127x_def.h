@@ -175,8 +175,8 @@
 #define FIFO_RX_BASE_ADDR 0x00 
 
 // Constants
-#define FXOSC (32e6) // 32 MHz
-#define FSTEP (FXOSC / (double) (1<<19)) // 61.03515625 Hz
+#define FREQ_XTAL 32000000 // 32 MHz
+#define FREQ_STEP 61.03515625 // Hz
 #define MAX_PKT_LENGTH 255 // maximum packet length [bytes]
 
 // BandWith table [kHz] (LoRa)
@@ -206,7 +206,6 @@
   {2, 1, 166.7}, \
   {1, 1, 200.0}, \
   {0, 1, 250.0}}
-
 
 //----------------------------------------------------------------------------
 #endif // SX127X_DEF_H

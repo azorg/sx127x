@@ -7,17 +7,24 @@ CLEAN_FILES := "$(OUT_DIR)/$(OUT_NAME).exe" a.out
 SRCS := \
 	sx127x_test.c \
         sx127x/sx127x.c \
-        spi/spi.h
+        spi/spi.c \
+	stimer/stimer.c \
+	sgpio/sgpio.c \
+	vsrpc/vsthread.c
 
 HDRS := \
   	sx127x/sx127x.h \
-	spi/spi.h
+	spi/spi.h \
+	stimer/stimer.h \
+	sgpio/sgpio.h \
+	vsrpc/vsthread.h
 
 # 2-nd way to select source files
-#SRC_DIRS := . sx127x spi
+#SRC_DIRS := . sx127x spi stimer sgpio vsrpc
 #HDR_DIRS := .
 #----------------------------------------------------------------------------
-DEFS    := -DSPI_DEBUG -DSX127X_DEBUG -DSGPIO_DEBUG
+DEFS    := -DSPI_DEBUG -DSX127X_DEBUG -DSGPIO_DEBUG \
+            -DVSTHREAD_DEBUG -DVSTHREAD_LINUX_RT
 #OPTIM  := -g -O0
 OPTIM   := -Os
 WARN    := -Wall -Wno-pointer-to-int-cast

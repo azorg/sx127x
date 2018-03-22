@@ -1,0 +1,6 @@
+2018.03.22:
+  + add stimer_sleep_ms() function
+
+2017.03.17:
+  + begin stimer.h/stimer.c module into `tick` project
+

@@ -91,6 +91,14 @@ struct timespec stimer_double_to_ts(double t)
   return ts;
 }
 //----------------------------------------------------------------------------
+// sleep [ms] (based on standart nanosleep())
+void stimer_sleep_ms(double ms)
+{
+  struct timespec reg = stimer_double_to_ts(ms * 1e-3);
+  struct timespec rem = reg;
+  nanosleep(&reg, &rem);
+}
+//----------------------------------------------------------------------------
 // print day time to file in next format: HH:MM:SS.mmmuuu
 void stimer_fprint_daytime(FILE *stream, double t)
 {

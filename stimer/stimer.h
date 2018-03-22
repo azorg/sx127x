@@ -6,7 +6,7 @@
 #ifndef STIMER_H
 #define STIMER_H
 //-----------------------------------------------------------------------------
-#include <time.h>   // clock_gettime(), clock_getres(), time_t, ...
+#include <time.h>   // clock_gettime(), clock_getres(), time_t, nanosleep(),...
 #include <signal.h> // sigaction(),  sigemptyset(), sigprocmask()
 #include <sched.h>  // sched_setscheduler(), SCHED_FIFO, ...
 #include <stdint.h> // `uint32_t`
@@ -57,6 +57,9 @@ double stimer_limit_delta(double t);
 //----------------------------------------------------------------------------
 // convert time in seconds to `struct timespec`
 struct timespec stimer_double_to_ts(double t);
+//----------------------------------------------------------------------------
+// sleep [ms] (based on standart nanosleep())
+void stimer_sleep_ms(double ms);
 //----------------------------------------------------------------------------
 // print day time to file in next format: HH:MM:SS.mmmuuu
 void stimer_fprint_daytime(FILE *stream, double daytime);

@@ -2,6 +2,7 @@
 *.o
 .dep
 .obj
-sx127x_test*
+sx127x_test
+sx127x_test.exe
 
 

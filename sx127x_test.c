@@ -25,13 +25,16 @@
 #define GPIO_CS    18    
 #define GPIO_DATA  19  
 
+// LED on GPIO to blink
+#define GPIO_LED  13
 //-----------------------------------------------------------------------------
 // global variables
 spi_t    spi;
-sgpio_t  gpio_irq;   // irq
+sgpio_t  gpio_irq;   // in IRQ
 sgpio_t  gpio_reset; // out
 sgpio_t  gpio_cs;    // out
 sgpio_t  gpio_data;  // out
+sgpio_t  gpio_led;   // out
 double interval = 1000.; // timer interval [ms]
 stimer_t timer;
 vsthread_t thread_timer;
@@ -84,10 +87,20 @@ int on_spi_exchange(
   return spi_exchange(spi, (char*) rx_buf, (const char*) tx_buf, (int) len);
 }
 //-----------------------------------------------------------------------------
+// blink LED
+void blink_ked()
+{
+  //printf(">>> blink_led()\n");
+  sgpio_set(&gpio_led, 0);
+  stimer_sleep_ms(100.);
+  sgpio_set(&gpio_led, 1);
+  stimer_sleep_ms(20.);
+}
+//-----------------------------------------------------------------------------
 // hard reset SX127x radio module
 void reset_radio()
 {
-  printf(">>> start reset_radio()\n");
+  printf(">>> reset_radio()\n");
   sgpio_set(&gpio_reset, 1);
   stimer_sleep_ms(100.);
   sgpio_set(&gpio_reset, 0);
@@ -105,6 +118,7 @@ void on_receive(
     void *context)      // optional context
 {
   fprintf(stderr, ">>> start on_receive()\n");
+  blink_ked();
 
 
 }
@@ -120,17 +134,20 @@ int main()
     sgpio_export(GPIO_RESET);
     sgpio_export(GPIO_CS);
     sgpio_export(GPIO_DATA);
+    sgpio_export(GPIO_LED);
   }
 
   sgpio_init(&gpio_irq,   GPIO_IRQ);
   sgpio_init(&gpio_reset, GPIO_RESET);
   sgpio_init(&gpio_cs,    GPIO_CS);
   sgpio_init(&gpio_data,  GPIO_DATA);
+  sgpio_init(&gpio_led,   GPIO_LED);
 
   sgpio_mode(&gpio_irq,   SGPIO_DIR_IN,  SGPIO_EDGE_RISING);
   sgpio_mode(&gpio_reset, SGPIO_DIR_OUT, SGPIO_EDGE_NONE);
   sgpio_mode(&gpio_cs,    SGPIO_DIR_OUT, SGPIO_EDGE_NONE);
   sgpio_mode(&gpio_data,  SGPIO_DIR_OUT, SGPIO_EDGE_NONE);
+  sgpio_mode(&gpio_led,   SGPIO_DIR_OUT, SGPIO_EDGE_NONE);
 
   // setup SPI
   retv = spi_init(&spi,
@@ -140,7 +157,8 @@ int main()
                   SPI_SPEED); // max speed [Hz]
   printf(">>> spi_init(device='%s', speed=%d) return %d\n",
          SPI_DEVICE, SPI_SPEED, retv);
-  //!!! FIXME if (retv != 0) exit(EXIT_FAILURE);
+  // FIXME
+  // if (retv != 0) exit(EXIT_FAILURE);
 
   // set "real-time" priority
   if (1)
@@ -192,12 +210,14 @@ int main()
   spi_free(&spi);
 
   // unexport GPIOs
+  sgpio_free(&gpio_led);
   sgpio_free(&gpio_data);
   sgpio_free(&gpio_cs);
   sgpio_free(&gpio_reset);
   sgpio_free(&gpio_irq);
   if (1)
   {
+    sgpio_unexport(GPIO_LED);
     sgpio_unexport(GPIO_DATA);
     sgpio_unexport(GPIO_CS);
     sgpio_unexport(GPIO_RESET);

@@ -46,6 +46,7 @@ Connect Ra-01/Ra-02 module base on LoRaTM SX127x chip to Orange Pi
 |    18    |      18      |             | CS          | NSS   (grey)    |
 |    19    |      16      |             | DATA *      | DIO2  (brown)   |
 |    10    |      26      |             | DCLK **     | DIO1  (orange)  |
+|    13    |      24      |             | LED         | -               |
 |    -     |   1 or 17    |             | 3.3V        | 3.3V  (red)     |
 |    -     | 25,20,14,9,6 |             | GND         | GND   (black)   |
 

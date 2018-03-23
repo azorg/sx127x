@@ -130,7 +130,7 @@
 #define MODES_MASK         0x07 // Modes bit mask 1
 
 // bit 3 (0 -> access to HF registers from 0x61 address, 1 -> access to LF registers)
-#define MODE_LOW_FREQ_MODE_ON 0x08 # `LowFrequencyModeOn` 
+#define MODE_LOW_FREQ_MODE_ON 0x08 // `LowFrequencyModeOn` 
 
 // bits 6-5 `ModulationType` [FSK/OOK modes only]
 #define MODE_FSK    0x00 // 0b00 -> FSK
@@ -175,8 +175,15 @@
 #define FIFO_RX_BASE_ADDR 0x00 
 
 // Constants
-#define FREQ_XTAL 32000000 // 32 MHz
-#define FREQ_STEP 61.03515625 // Hz
+#define FREQ_XTAL  32000000    // 32 MHz
+#define FREQ_STEP  61.03515625 // FREQ_XTAL / 2**19 [Hz]
+
+#define FREQ_MAGIC_0 31    // round(FREQ_STEP/2) [Hz]
+#define FREQ_MAGIC_1 8     // arithmetic shift
+#define FREQ_MAGIC_2 625   // 5**4
+#define FREQ_MAGIC_3 25    // 5**2
+#define FREQ_MAGIC_4 15625 // 625*25
+
 #define MAX_PKT_LENGTH 255 // maximum packet length [bytes]
 
 // BandWith table [kHz] (LoRa)

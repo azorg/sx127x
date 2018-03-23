@@ -10,6 +10,10 @@
 // limit arguments
 #define SX127X_LIMIT(x, min, max) \
   ((x) > (max) ? (max) : ((x) < (min) ? (min) : (x)))
+
+#define SX127X_MIN(x, y) ((x) < (y) ? (x) : (y))
+
+#define SX127X_MAX(x, y) ((x) > (y) ? (x) : (y))
 //-----------------------------------------------------------------------------
 // common error codes (return values)
 #define SX127X_ERR_NONE     0 // no error, success
@@ -38,7 +42,7 @@ typedef u8_t bool;
 #define false 0
 //----------------------------------------------------------------------------
 // float types
-typedef float f32_t;
+//typedef float f32_t;
 //typedef double f64_t;
 //----------------------------------------------------------------------------
 // SX127x radio mode
@@ -52,20 +56,20 @@ typedef enum {
 typedef struct sx127x_pars_ {
   // common pars:
   u32_t freq;       // frequency [Hz] (434000000 -> 434 MHz)
-   u8_t out_power;  // `OutputPower` level 0...15
-   u8_t max_power;  // `MaxPower` parametr 0...7 (7 by default)
-   bool pa_boost;   // true - use PA_BOOT out pin, false - use RFO out pin
-   bool high_power; // if true then add +3 dB to power on PA_BOOST output pin
-   bool crc;        // CRC in packet modes false - off, true - on
+  u8_t  out_power;  // `OutputPower` level 0...15
+  u8_t  max_power;  // `MaxPower` parametr 0...7 (7 by default)
+  bool  pa_boost;   // true - use PA_BOOT out pin, false - use RFO out pin
+  bool  high_power; // if true then add +3 dB to power on PA_BOOST output pin
+  bool  crc;        // CRC in packet modes false - off, true - on
 
   // LoRaTM mode pars:
   u32_t bw;         // Bandwith [Hz]: 7800...500000 (125000 -> 125 kHz)
-   u8_t cr;         // Code Rate: 5...8
-   u8_t sf;         // Spreading Facror: 6..12
-   i8_t ldro;       // Low Data Rate Optimize: 1 - on, 0 - off, -1 - automatic
-   u8_t sw;         // Sync Word (allways 0x12)
+  u8_t  cr;         // Code Rate: 5...8
+  u8_t  sf;         // Spreading Facror: 6..12
+  i8_t  ldro;       // Low Data Rate Optimize: 1 - on, 0 - off, -1 - automatic
+  u8_t  sw;         // Sync Word (allways 0x12)
   u16_t preamble;   // Size of preamble: 6...65535 (8 by default)
-   bool impl_hdr;   // Implicit Header on/off
+  bool  impl_hdr;   // Implicit Header on/off
    //bool rx_single;  // `RsSinleOn`
    //bool freq_hop;   // `FreqHopOn`
    //u8_t hop_period; // `HopPeriod`                 
@@ -75,9 +79,9 @@ typedef struct sx127x_pars_ {
   u32_t fdev;    // frequency deviation [Hz] (5000 Hz for example)
   u32_t rx_bw;   // RX  bandwidth [Hz]: 2600...250000 kHz (10400 -> 10.4 kHz)
   u32_t afc_bw;  // AFC bandwidth [Hz]: 2600...250000 kHz (2600  ->  2.6 kHz)
-   bool afc;     // AFC on/off
-   bool fixed;   // false - variable packet size, true - fixed packet size
-   u8_t dcfree;  // DC free method: 0 - None, 1 - Manchester, 2 - Whitening
+  bool  afc;     // AFC on/off
+  bool  fixed;   // false - variable packet size, true - fixed packet size
+  u8_t  dcfree;  // DC free method: 0 - None, 1 - Manchester, 2 - Whitening
 
 } sx127x_pars_t;
 //----------------------------------------------------------------------------
@@ -107,6 +111,8 @@ struct sx127x_ {
   
   void *spi_exchange_context; // optional SPI exchange context
   void *on_receive_context;   // optional on_receive() context
+
+  u8_t payload[256]; // payload receiver buffer
 };
 //----------------------------------------------------------------------------
 // default SX127x radio module configuration
@@ -116,6 +122,12 @@ extern sx127x_pars_t sx127x_pars_default;
 extern "C"
 {
 #endif // __cplusplus
+//----------------------------------------------------------------------------
+// read SX127x 8-bit register from SPI
+u8_t sx127x_read_reg(sx127x_t *self, u8_t address);
+//-----------------------------------------------------------------------------
+// write SX127x 8-bit register to SPI
+void sx127x_write_reg(sx127x_t *self, u8_t address, u8_t value);
 //----------------------------------------------------------------------------
 // init SX127x radio module
 int sx127x_init(
@@ -147,15 +159,16 @@ void sx127x_free(sx127x_t *self);
 // set callback on receive packet (Lora/FSK/OOK)
 void sx127x_on_receive(
   sx127x_t *self,
-  void (*on_receive)(  // receive callback or NULL
-    sx127x_t *self,     // pointer to sx127x_t object
-    u8_t *payload,      // payload data
-    u8_t payload_size,  // payload size
-    bool crc,           // CRC ok/false
-    void *context));    // optional context
+  void (*on_receive)(        // receive callback or NULL
+    sx127x_t *self,            // pointer to sx127x_t object
+    u8_t *payload,             // payload data
+    u8_t payload_size,         // payload size
+    bool crc,                  // CRC ok/false
+    void *context),            // optional context
+  void *on_receive_context); // optional on_receive() context
 //----------------------------------------------------------------------------
 // setup SX127x radio module (uses from sx127x_init())
-int sx127x_set_pars(
+i16_t sx127x_set_pars(
   sx127x_t *self,
   const sx127x_pars_t *pars); // configuration parameters or NULL
 //----------------------------------------------------------------------------
@@ -208,10 +221,10 @@ void sx127x_set_lna_boost(sx127x_t *self, bool lna_boost);
 u8_t sx127x_get_rx_gain(sx127x_t *self);
 //----------------------------------------------------------------------------
 // get RSSI [dB]
-i8_t sx127x_get_rssi(sx127x_t *self);
+i16_t sx127x_get_rssi(sx127x_t *self);
 //----------------------------------------------------------------------------
 // get SNR [dB] (LoRa)
-i8_t sx127x_get_snr(sx127x_t *self);
+i16_t sx127x_get_snr(sx127x_t *self);
 //----------------------------------------------------------------------------
 // set TX power levels, select/deselect PA_BOOST pin
 // 1. if PA_BOOST pin selected then:
@@ -228,10 +241,11 @@ void sx127x_set_power_ex(sx127x_t *self,
 // set TX output power: -4...+15 dBm on RFO or +2...+17 dBm on PA_BOOST
 void sx127x_set_power_dbm(sx127x_t *self, i8_t dbm);
 //----------------------------------------------------------------------------
-// set high power on PA_BOOST: add 3 dB (up to +20 dBm out)
+// set high power (+3 dB) on PA_BOOST pin (up to +20 dBm output power)
 void sx127x_set_high_power(sx127x_t *self, bool on);
 //----------------------------------------------------------------------------
 // set trimming of OCP current (45...240 mA)
+// (note: you must set OCP trmimmer if set high power, look datasheet)
 void sx127x_set_ocp(sx127x_t *self, u8_t trim_mA, bool on);
 //----------------------------------------------------------------------------
 // set modulation shaping code 0..3 (FSK/OOK)
@@ -299,13 +313,13 @@ void sx127x_set_dcfree(sx127x_t *self, u8_t dcfree);
 void sx127x_set_fast_hop(sx127x_t *self, bool on);
 //----------------------------------------------------------------------------
 // send packet (LoRa/FSK/OOK)
-u8_t sx127x_send(sx127x_t *self, const u8_t *data, u8_t size);
+i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size);
 //----------------------------------------------------------------------------
 // go to RX mode; wait callback by interrupt (LoRa/FSK/OOK)
-void sx127x_receive(sx127x_t *self);
+void sx127x_receive(sx127x_t *self, i16_t pkt_len);
 //----------------------------------------------------------------------------
 // enable/disable interrupt by RX done for debug (LoRa)
-void sx127x_enable_rx_irq(sx127x_t *self);
+void sx127x_enable_rx_irq(sx127x_t *self, bool enable);
 //----------------------------------------------------------------------------
 // get IRQ flags for debug
 u16_t sx127x_get_irq_flags(sx127x_t *self);

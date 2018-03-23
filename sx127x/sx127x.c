@@ -38,19 +38,19 @@ sx127x_pars_t sx127x_pars_default = {
 };
 //-----------------------------------------------------------------------------
 // BandWith table [kHz] (LoRa)
-u32_t sx127x_bw_tbl[] = BW_TABLE; // Hz
+static u32_t sx127x_bw_tbl[] = BW_TABLE; // Hz
 
 // RX BandWith table (FSK/OOK)
 typedef struct sx127x_rf_bw_tbl_ {
-   u8_t mant; // 0...2
-   u8_t exp;  // 1...7
-  u32_t bw;   // 2600...250000 Hz
+  u8_t  m;  // 0...2
+  u8_t  e;  // 1...7
+  u32_t bw; // 2600...250000 Hz
 } sx127x_rf_bw_tbl_t;
 
-sx127x_rf_bw_tbl_t sx127x_rf_bw_tbl[] = RX_BW_TABLE;
+static sx127x_rf_bw_tbl_t sx127x_rf_bw_tbl[] = RX_BW_TABLE;
 //-----------------------------------------------------------------------------
 // get index of bandwidth (LoRa mode), bandwidth in Hz
-u8_t sx127x_bw_pack(u32_t bw)
+static u8_t sx127x_bw_pack(u32_t bw)
 {
   int i, n = sizeof(sx127x_bw_tbl) / sizeof(u32_t);
   u8_t ix = (u8_t) (n - 1);
@@ -66,7 +66,7 @@ u8_t sx127x_bw_pack(u32_t bw)
 }
 //-----------------------------------------------------------------------------
 // pack RX bandwidth in Hz to mant/exp micro float format (FSK/OOK mode)
-void sx127x_rx_bw_pack(u32_t bw, u8_t *m, u8_t *e)
+static void sx127x_rx_bw_pack(u32_t bw, u8_t *m, u8_t *e)
 {
   int i, n = sizeof(sx127x_rf_bw_tbl) / sizeof(sx127x_rf_bw_tbl_t);
 
@@ -74,18 +74,18 @@ void sx127x_rx_bw_pack(u32_t bw, u8_t *m, u8_t *e)
   {
     if (bw <= sx127x_rf_bw_tbl[i].bw)
     {
-      *m = sx127x_rf_bw_tbl[i].mant;
-      *e = sx127x_rf_bw_tbl[i].exp;
+      *m = sx127x_rf_bw_tbl[i].m;
+      *e = sx127x_rf_bw_tbl[i].e;
       return;
     }
   }
 
-  *m = sx127x_rf_bw_tbl[n - 1].mant;
-  *e = sx127x_rf_bw_tbl[n - 1].exp;
+  *m = sx127x_rf_bw_tbl[n - 1].m;
+  *e = sx127x_rf_bw_tbl[n - 1].e;
 }
 //----------------------------------------------------------------------------
 // SPI transfer help function
-static u8_t sx127x_spi_transfer(sx127x_t *self, u8_t address, u8_t value)
+static u8_t sx127x_spi_exchange(sx127x_t *self, u8_t address, u8_t value)
 {
   u8_t tx_buf[2], rx_buf[2];
   
@@ -101,16 +101,16 @@ static u8_t sx127x_spi_transfer(sx127x_t *self, u8_t address, u8_t value)
   return rx_buf[1];
 }
 //-----------------------------------------------------------------------------
-// read SX127x 8-bit register by SPI help function
+// read SX127x 8-bit register from SPI
 u8_t sx127x_read_reg(sx127x_t *self, u8_t address)
 {
-  return sx127x_spi_transfer(self, address & 0x7F, 0);
+  return sx127x_spi_exchange(self, address & 0x7F, 0);
 }
 //-----------------------------------------------------------------------------
-// read SX127x 8-bit register by SPI help function
+// write SX127x 8-bit register to SPI
 void sx127x_write_reg(sx127x_t *self, u8_t address, u8_t value)
 {
-  sx127x_spi_transfer(self, address | 0x80, value);
+  sx127x_spi_exchange(self, address | 0x80, value);
 }
 //-----------------------------------------------------------------------------
 // init SX127x radio module
@@ -153,26 +153,27 @@ int sx127x_init(
 // free SX127x radio module
 void sx127x_free(sx127x_t *self)
 {
-  // do nothing yet
+  // do nothing
+  sx127x_sleep(self);
 }
 //----------------------------------------------------------------------------
 // set callback on receive packet (Lora/FSK/OOK)
 void sx127x_on_receive(
   sx127x_t *self,
-  void (*on_receive)(  // receive callback or NULL
-    sx127x_t *self,     // pointer to sx127x_t object
-    u8_t *payload,      // payload data
-    u8_t payload_size,  // payload size
-    bool crc,           // CRC ok/false
-    void *context))     // optional context
+  void (*on_receive)(       // receive callback or NULL
+    sx127x_t *self,           // pointer to sx127x_t object
+    u8_t *payload,            // payload data
+    u8_t payload_size,        // payload size
+    bool crc,                 // CRC ok/false
+    void *context),           // optional context
+  void *on_receive_context) // optional on_receive() context
 {
-
-
-
+  self->on_receive         = on_receive;
+  self->on_receive_context = on_receive_context;
 }
 //----------------------------------------------------------------------------
 // setup SX127x radio module (uses from sx127x_init())
-int sx127x_set_pars(
+i16_t sx127x_set_pars(
   sx127x_t *self,
   const sx127x_pars_t *pars) // configuration parameters or NULL
 {
@@ -399,7 +400,7 @@ void sx127x_set_frequency(sx127x_t *self, u32_t freq)
   // save RF frequency
   self->freq = freq;
   
-  SX127X_DBG("set RF frequency to %.1f Hz", ((double) f) * FREQ_STEP);
+  SX127X_DBG("set RF frequency to %lu Hz", sx127x_get_frequency(self));
 }
 //----------------------------------------------------------------------------
 // get RF frequency [Hz]
@@ -429,22 +430,33 @@ void sx127x_set_lna_boost(sx127x_t *self, bool lna_boost)
 // get current RX gain code [1..6] from `RegLna` (1 - maximum gain)
 u8_t sx127x_get_rx_gain(sx127x_t *self)
 {
-
-  return 0;
+  return (sx127x_read_reg(self, REG_LNA) >> 5) & 0x07;
 }
 //----------------------------------------------------------------------------
 // get RSSI [dB]
-i8_t sx127x_get_rssi(sx127x_t *self)
+i16_t sx127x_get_rssi(sx127x_t *self)
 {
+  // FIXME
+  if (self->mode == SX127X_LORA) // LoRa mode
+    return ((i16_t) sx127x_read_reg(self, REG_PKT_RSSI_VALUE)) -
+           (self->freq < 600000000 ? 164 : 157); // F_LF<=525, F_HF>=779 MHz
+  else // FSK/OOK mode
+    return (- (i16_t) sx127x_read_reg(self, REG_RSSI_VALUE)) >> 1;
 
-  return 0;
 }
 //----------------------------------------------------------------------------
 // get SNR [dB] (LoRa)
-i8_t sx127x_get_snr(sx127x_t *self)
+i16_t sx127x_get_snr(sx127x_t *self)
 {
-
-  return 0;
+  if (self->mode == SX127X_LORA) // LoRa mode
+  {
+    u16_t reg = (u16_t) sx127x_read_reg(self, REG_PKT_SNR_VALUE);
+    i16_t snr = (i16_t) reg;
+    if (snr & 0x80) // sign bit is 1
+      snr -= 256;
+    return snr >> 2; // dB
+  }
+  return 0; // FSK/OOK
 }
 //----------------------------------------------------------------------------
 // set TX power levels, select/deselect PA_BOOST pin
@@ -489,26 +501,50 @@ void sx127x_set_power_dbm(sx127x_t *self, i8_t dBm)
   }
 }
 //----------------------------------------------------------------------------
-// set high power on PA_BOOST: add 3 dB (up to +20 dBm out)
+// set high power (+3 dB) on PA_BOOST pin (up to +20 dBm output power)
+// (note: you must set OCP trmimmer if set high power, look datasheet)
 void sx127x_set_high_power(sx127x_t *self, bool on)
 {
-
-
+  if (on)
+    sx127x_write_reg(self, REG_PA_DAC, 0x87);
+  else
+    sx127x_write_reg(self, REG_PA_DAC, 0x84);
 }
 //----------------------------------------------------------------------------
 // set trimming of OCP current (45...240 mA)
 void sx127x_set_ocp(sx127x_t *self, u8_t trim_mA, bool on)
 {
+  i16_t trim;
 
+  if (trim_mA <= 120)
+    trim = (trim_mA + (2 - 45)) / 5;
+  else
+    trim = (trim_mA + (5 + 30)) / 10;
 
+  trim = SX127X_LIMIT(trim, 0, 27);
+  
+  if (on)
+    trim |= 0x20; // `OcpOn`
+
+  sx127x_write_reg(self, REG_OCP, (u8_t) (trim & 0xFF));
+
+  SX127X_DBG("set trimming of OCP current to %i mA; OCP is %s",
+             trim <= 15 ? trim * 5 + 45 : trim * 10 - 30,
+	     on ? "on" : "off");
 }
 //----------------------------------------------------------------------------
 // set modulation shaping code 0..3 (FSK/OOK)
 // and set PA rise/fall time code 0..15 (FSK/Lora)
 void sx127x_set_ramp(sx127x_t *self, u8_t shaping, u8_t ramp)
 {
+  u8_t reg;
 
-
+  shaping = SX127X_LIMIT(shaping, 0, 3);
+  ramp    = SX127X_LIMIT(ramp,    0, 15);
+    
+  reg = sx127x_read_reg(self, REG_PA_RAMP);
+  reg = (reg & 0x90) | (shaping << 5) | ramp;
+  sx127x_write_reg(self, REG_PA_RAMP, reg);
 }
 //----------------------------------------------------------------------------
 // enable/disable CRC, set/unset `CrcAutoClearOff` in FSK/OOK mode
@@ -620,8 +656,13 @@ void sx127x_set_sw(sx127x_t *self, u8_t sw)
 // invert IQ channels (LoRa)
 void sx127x_invert_iq(sx127x_t *self, bool invert)
 {
-
-
+  if (self->mode == SX127X_LORA) // LoRa mode
+  {
+    u8_t reg = sx127x_read_reg(self, REG_INVERT_IQ);
+    if (invert) reg |=  0x40; // `InvertIq`=1
+    else        reg &= ~0x40; // `InvertIq`=0
+    sx127x_write_reg(self, REG_INVERT_IQ, reg);
+  }
 }
 //----------------------------------------------------------------------------
 // select Continuous mode, must use DIO2->DATA, DIO1->DCLK (FSK/OOK)
@@ -646,7 +687,7 @@ void sx127x_rx_calibrate(sx127x_t *self)
     sx127x_write_reg(self, REG_IMAGE_CAL, reg);
     while (sx127x_read_reg(self, REG_IMAGE_CAL) & 0x20) // `ImageCalRunning`
     {
-      ; // FIXME: check timeout
+      // FIXME: check timeout
     }
   }
 }
@@ -750,37 +791,206 @@ void sx127x_set_fast_hop(sx127x_t *self, bool on)
 }
 //----------------------------------------------------------------------------
 // send packet (LoRa/FSK/OOK)
-u8_t sx127x_send(sx127x_t *self, const u8_t *data, u8_t size)
+i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size)
 {
+  int i;
+  sx127x_standby(self);
 
-  return 0;
+  if (self->mode == SX127X_LORA) // LoRa mode
+  {
+    u8_t current_length; 
+    sx127x_impl_hdr(self, false); // FIXME: check!
+  
+    // reset FIFO address and paload length 
+    sx127x_write_reg(self, REG_FIFO_ADDR_PTR, FIFO_TX_BASE_ADDR);
+    sx127x_write_reg(self, REG_PAYLOAD_LENGTH, 0);
+
+    // check size
+    current_length = sx127x_read_reg(self, REG_PAYLOAD_LENGTH);
+    size = SX127X_MIN(size, (MAX_PKT_LENGTH - FIFO_TX_BASE_ADDR - current_length));
+
+    // write data to FIFO
+    for (i = 0; i < size; i++)
+      sx127x_write_reg(self, REG_FIFO, data[i]);
+
+    // update length
+    sx127x_write_reg(self, REG_PAYLOAD_LENGTH, current_length + size);
+
+    // start TX mode
+    sx127x_tx(self);
+
+    // wait for TX done, standby automatically on TX_DONE
+    while ((sx127x_read_reg(self, REG_IRQ_FLAGS) & IRQ_TX_DONE) == 0)
+    {
+      // FIXME: check timeout
+    }
+
+    // clear IRQ's
+    sx127x_write_reg(self, REG_IRQ_FLAGS, IRQ_TX_DONE);
+  }
+  else // FSK/OOK mode
+  {
+    //u8_t add;
+    size = SX127X_MIN(size, 256); // limit size FIXME
+
+    // set TX start FIFO condition
+    //sx127x_write_reg(self, REG_FIFO_THRESH, TX_START_FIFO_NOEMPTY);
+    
+    // wait while FIFO is no empty
+    while ((sx127x_read_reg(self, REG_IRQ_FLAGS_2) & IRQ2_FIFO_EMPTY) == 0)
+    {
+      // FIXME: check timeout
+    }
+
+    if (sx127x_read_reg(self, REG_PACKET_CONFIG_1) & 0x80) // `PacketFormat`
+    {
+      sx127x_write_reg(self, REG_FIFO, size); // variable length
+      //add = 1;
+    }
+    else
+    {
+      sx127x_write_reg(self, REG_PAYLOAD_LEN, size); // fixed length
+      //add = 0;
+    }
+    
+    // set TX start FIFO condition
+    //sx127x_write_reg(self, REG_FIFO_THRESH, TX_START_FIFO_LEVEL | (size + add));
+    
+    // write data to FIFO
+    for (i = 0; i < size; i++)
+      sx127x_write_reg(self, REG_FIFO, data[i]);
+    
+    // start TX mode
+    sx127x_tx(self);
+    
+    // wait `TxRaedy` (bit 5 in `RegIrqFlags1`)
+    //while ((sx127x_read_reg(self, REG_IRQ_FLAGS_1) & IRQ1_TX_READY) == 0)
+    //{
+    //  // FIXME: check timeout
+    //}
+
+    // wait `PacketSent` (bit 3 in `RegIrqFlags2`)
+    while ((sx127x_read_reg(self, REG_IRQ_FLAGS_2) & IRQ2_PACKET_SENT) == 0)
+    {
+      // FIXME: check timeout
+    }
+    
+    // switch to standby mode
+    sx127x_standby(self);
+  }
+
+  return SX127X_ERR_NONE; // FIXME
 }
 //----------------------------------------------------------------------------
 // go to RX mode; wait callback by interrupt (LoRa/FSK/OOK)
-void sx127x_receive(sx127x_t *self)
+void sx127x_receive(sx127x_t *self, i16_t pkt_len)
 {
-
+  if (self->mode == SX127X_LORA) // LoRa mode
+  {
+    if (pkt_len > 0)
+    {
+      sx127x_impl_hdr(self, true); // FIXME: check!
+      sx127x_write_reg(self, REG_PAYLOAD_LENGTH, (u8_t) pkt_len);
+    }
+  }
+  else // FSK/OOK mode
+  {
+    if ((sx127x_read_reg(self, REG_PACKET_CONFIG_1) & 0x80) == 0)
+      // `PacketFormat`=1 => fixed length
+      sx127x_write_reg(self, REG_PAYLOAD_LEN, (u8_t) SX127X_MAX(pkt_len, 1));
+  }
+  sx127x_rx(self);
 }
 //----------------------------------------------------------------------------
 // enable/disable interrupt by RX done for debug (LoRa)
-void sx127x_enable_rx_irq(sx127x_t *self)
+void sx127x_enable_rx_irq(sx127x_t *self, bool enable)
 {
-
-
+  if (self->mode == SX127X_LORA) // LoRa mode
+  {
+    u8_t reg = sx127x_read_reg(self, REG_IRQ_FLAGS_MASK);
+    if (enable) reg &= ~IRQ_RX_DONE_MASK;
+    else        reg |=  IRQ_RX_DONE_MASK;
+    sx127x_write_reg(self, REG_IRQ_FLAGS_MASK, reg);
+  }
 }
 //----------------------------------------------------------------------------
 // get IRQ flags for debug
 u16_t sx127x_get_irq_flags(sx127x_t *self)
 {
-
-  return 0;
+  if (self->mode == SX127X_LORA) // LoRa mode
+  {
+    u8_t irq_flags = sx127x_read_reg(self, REG_IRQ_FLAGS);
+    sx127x_write_reg(self, REG_IRQ_FLAGS, irq_flags);
+    return (u16_t) irq_flags;
+  }
+  else // FSK/OOK mode
+  {
+    u16_t irq_flags_1 = (u16_t) sx127x_read_reg(self, REG_IRQ_FLAGS_1); 
+    u16_t irq_flags_2 = (u16_t) sx127x_read_reg(self, REG_IRQ_FLAGS_2); 
+    return (irq_flags_2 << 8) | irq_flags_1;
+  }
 }
 //----------------------------------------------------------------------------
 // IRQ handler on DIO0 pin
 void sx127x_irq_handler(sx127x_t *self)
 {
-  printf(">>> start sx127x_irq_handler()\n");
-  //...
+  bool crc_ok;
+  i16_t payload_len;
+  int i;
+
+  if (self->mode == SX127X_LORA) // LoRa mode
+  {
+    u8_t irq_flags = sx127x_read_reg(self, REG_IRQ_FLAGS); // should be 0x50
+    sx127x_write_reg(self, REG_IRQ_FLAGS, irq_flags);
+
+    if ((irq_flags & IRQ_RX_DONE) == 0) // check `RxDone`
+      return; // `RxDone` is not set
+
+    SX127X_DBG("DIO0 interrupt in LoRa mode by `RxDone` (RegIrqFlags=0x%02X)",
+       	       irq_flags);
+
+    // check `PayloadCrcError` bit
+    crc_ok = !(irq_flags & IRQ_PAYLOAD_CRC_ERROR);
+
+    // set FIFO address to current RX address
+    sx127x_write_reg(self, REG_FIFO_ADDR_PTR,
+	             sx127x_read_reg(self, REG_FIFO_RX_CURRENT_ADDR));
+
+    // read payload length
+    payload_len = self->impl_hdr ?
+                 sx127x_read_reg(self, REG_PAYLOAD_LENGTH) :
+		 sx127x_read_reg(self, REG_RX_NB_BYTES);
+  }
+  else // FSK/OOK mode
+  {
+    u8_t irq_flags = sx127x_read_reg(self, REG_IRQ_FLAGS_2); // ~ 0x26/0x24
+    
+    if ((irq_flags & IRQ2_PAYLOAD_READY) == 0) // check `PayloadReady`
+      return; // `PayloadReady` is not set
+  
+    SX127X_DBG("DIO0 interrupt in FSK/OOK mode by `PayloadReady` "
+	       "(RegIrqFlags2=0x%02X)", irq_flags);
+  
+    // check `CrcOk` bit
+    crc_ok = !!(irq_flags & IRQ2_CRC_OK);
+
+    // read payload length
+    if (sx127x_read_reg(self, REG_PACKET_CONFIG_1) & 0x80) // `PacketFormat`
+      payload_len = sx127x_read_reg(self, REG_FIFO); // variable length
+    else
+      payload_len = sx127x_read_reg(self, REG_PAYLOAD_LEN); // fixed length
+  }
+  
+  // read FIFO
+  for (i = 0; i < payload_len; i++)
+    self->payload[i] = sx127x_read_reg(self, REG_FIFO);
+
+  // run callback
+  if (self->on_receive !=
+      (void (*)(sx127x_t*, u8_t*, u8_t, bool, void*)) NULL)
+  self->on_receive(self, self->payload, payload_len, crc_ok,
+                   self->on_receive_context);
+
 }
 //----------------------------------------------------------------------------
 

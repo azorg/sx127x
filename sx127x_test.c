@@ -13,20 +13,36 @@
 #include "sx127x.h"     // `sx127x_t`
 #include "sx127x_def.h" // SX127x define's
 //-----------------------------------------------------------------------------
-// SPI device
-#define SPI_DEVICE "/dev/spidev1.0" // SPI on my Orange Pi Zero
+#define ORANGE_PI_ZERO
+//#define ORANGE_PI_ONE
+//#define ORANGE_PI_WIN_PLUS
+
+// GPIO lines and SPI device to SX127x module
+#if defined(ORANGE_PI_ZERO)
+#  define SPI_DEVICE "/dev/spidev1.0"
+#  define GPIO_RESET 7
+#  define GPIO_IRQ   6
+#  define GPIO_CS    18
+#  define GPIO_DATA  19
+#  define GPIO_LED   13
+#elif defined(ORANGE_PI_ONE)
+#  define SPI_DEVICE "/dev/spidev1.0"
+#  define GPIO_RESET 1
+#  define GPIO_IRQ   2
+#  define GPIO_CS    3
+#  define GPIO_DATA  4
+#  define GPIO_LED   5
+#elif defined(ORANGE_PI_WIN_PLUS)
+#  define SPI_DEVICE "/dev/spidev1.0"
+#  define GPIO_RESET 1
+#  define GPIO_IRQ   2
+#  define GPIO_CS    3
+#  define GPIO_DATA  4
+#  define GPIO_LED   5
+#endif
 
 // SPI max speed [Hz]
 #define SPI_SPEED 500000 // 5 MHz
-
-// GPIO lines to SX127x module
-#define GPIO_RESET 7
-#define GPIO_IRQ   6
-#define GPIO_CS    18    
-#define GPIO_DATA  19  
-
-// LED on GPIO to blink
-#define GPIO_LED  13
 //-----------------------------------------------------------------------------
 // global variables
 spi_t    spi;

@@ -2,6 +2,7 @@
  * work in process
  * prepare all `sx127x_t` prototypes
  * `sx127x_t` ready to debug
+ + add sx127x/README.md
 
 2018.03.20: Alex Zorg <azorg(at)mail.ru>
  + start project

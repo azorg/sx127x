@@ -1,7 +1,7 @@
 ﻿Semtech SX127x famaly chips driver
 ==================================
 
-## Supperted radio modes
+## Supported radio modes
 
 * LoRaTM (RX/TX)
 
@@ -41,7 +41,7 @@
 
 * sx127x_set_frequency() - set RF frequency [Hz]
 
-* sx127x_set_power_***() - set output power (some function) [Hz]
+* sx127x_set_power_***() - set output power (some functions) [Hz]
 
 * sx127x_set_high_power() - set High Power (+3 dB on PA_BOOST pin)
 

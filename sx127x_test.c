@@ -17,7 +17,7 @@
 //#define ORANGE_PI_ONE
 //#define ORANGE_PI_WIN_PLUS
 
-// GPIO lines and SPI device to SX127x module
+// GPIO lines and SPI devic to SX127x module
 #if defined(ORANGE_PI_ZERO)
 #  define SPI_DEVICE "/dev/spidev1.0"
 #  define GPIO_RESET 7
@@ -26,19 +26,19 @@
 #  define GPIO_DATA  19
 #  define GPIO_LED   13
 #elif defined(ORANGE_PI_ONE)
-#  define SPI_DEVICE "/dev/spidev1.0"
-#  define GPIO_RESET 1
-#  define GPIO_IRQ   2
-#  define GPIO_CS    3
-#  define GPIO_DATA  4
-#  define GPIO_LED   5
+#  define SPI_DEVICE "/dev/spidev1.0" // FIXME
+#  define GPIO_RESET 1 // FIXME
+#  define GPIO_IRQ   2 // FIXME
+#  define GPIO_CS    3 // FIXME
+#  define GPIO_DATA  4 // FIXME
+#  define GPIO_LED   5 // FIXME
 #elif defined(ORANGE_PI_WIN_PLUS)
-#  define SPI_DEVICE "/dev/spidev1.0"
-#  define GPIO_RESET 1
-#  define GPIO_IRQ   2
-#  define GPIO_CS    3
-#  define GPIO_DATA  4
-#  define GPIO_LED   5
+#  define SPI_DEVICE "/dev/spidev1.0" // FIXME
+#  define GPIO_RESET 1 // FIXME
+#  define GPIO_IRQ   2 // FIXME
+#  define GPIO_CS    3 // FIXME
+#  define GPIO_DATA  4 // FIXME
+#  define GPIO_LED   5 // FIXME
 #endif
 
 // SPI max speed [Hz]
@@ -64,18 +64,19 @@ static void sigint_handler(void *context)
   fprintf(stderr, "\nCtrl-C pressed\n");
 } 
 //-----------------------------------------------------------------------------
-// periodic timer handler
+// periodic timer handler (main periodic function)
 static int timer_handler(void *context)
 {
-  fprintf(stderr, ">>> start timer_handrer()\n");
+  printf(">>> start timer_handrer()\n");
   //...
   return 0;
 }
 //-----------------------------------------------------------------------------
-/*static*/ void *irq_thread(void *arg)
+// IRQ waiting thread
+static void *thread_fn(void *arg)
 {
   printf(">>> start irq_thread()\n");
-  pause(); //!!!
+  pause(); //FIXME This statement only for debug!!!
   while (1)
   {
     // wait interrupt
@@ -86,7 +87,7 @@ static int timer_handler(void *context)
   return NULL;
 }
 //-----------------------------------------------------------------------------
-// SPI crystal select wrapper function
+// SPI crystal select by GPIO wrapper function
 void on_spi_cs(bool cs)
 {
   sgpio_set(&gpio_cs, cs ? 0 : 1); // negative CS
@@ -106,7 +107,7 @@ int on_spi_exchange(
 // blink LED
 void blink_ked()
 {
-  //printf(">>> blink_led()\n");
+  printf(">>> blink_led()\n"); // FIXME
   sgpio_set(&gpio_led, 0);
   stimer_sleep_ms(100.);
   sgpio_set(&gpio_led, 1);
@@ -135,10 +136,11 @@ void on_receive(
 {
   fprintf(stderr, ">>> start on_receive()\n");
   blink_ked();
-
+  //... FIXME
 
 }
 //-----------------------------------------------------------------------------
+// simple example usage of `sx127x_t` component 
 int main()
 {
   int retv;
@@ -176,33 +178,13 @@ int main()
   // FIXME
   // if (retv != 0) exit(EXIT_FAILURE);
 
-  // set "real-time" priority
-  if (1)
-  {
-    retv = stimer_realtime();
-    printf(">>> stimer_realtime() return %d\n", retv);
-  }
-
+  // creade listen IRQ threads
+  vsthread_create(32, SCHED_FIFO, &thread_irq, thread_irq_fn, NULL);
+  
   // set handler for SIGINT (CTRL+C)
   retv = stimer_sigint(sigint_handler, (void*) NULL);
   printf(">>> stimer_sigint_handler() return %d\n", retv);
   if (retv != 0) exit(EXIT_FAILURE);
-
-  // creade listen IRQ threads
-  vsthread_create(32, SCHED_FIFO, &thread_irq, irq_thread, NULL);
-  
-  // setup timer
-  retv = stimer_init(&timer, timer_handler, (void*) NULL);
-  printf(">>> stimer_init() return %d\n", retv);
-  if (retv != 0) exit(EXIT_FAILURE);
-
-  // run timer
-  retv = stimer_start(&timer, interval);
-  printf(">>> stimer_start(%f) return %d\n", interval, retv);
-  if (retv != 0) exit(EXIT_FAILURE);
-
-  // hard reset SX127x radio module
-  reset_radio();
 
   // setup SX127x module
   sx127x_init(
@@ -215,12 +197,32 @@ int main()
       (void*) &spi,    // optional SPI exchange context
       (void*) NULL);   // optional on_receive() context
 
-  // run timer loop
+  // set "real-time" priority
+  if (1)
+  {
+    retv = stimer_realtime();
+    printf(">>> stimer_realtime() return %d\n", retv);
+  }
+
+  // setup timer
+  retv = stimer_init(&timer, timer_handler, (void*) NULL);
+  printf(">>> stimer_init() return %d\n", retv);
+  if (retv != 0) exit(EXIT_FAILURE);
+
+  // run periodic timer
+  retv = stimer_start(&timer, interval);
+  printf(">>> stimer_start(%f) return %d\n", interval, retv);
+  if (retv != 0) exit(EXIT_FAILURE);
+
+  // hard reset SX127x radio module
+  reset_radio();
+
+  // run timer loop ()
   retv = stimer_loop(&timer);
   printf(">>> stimer_loop() return %i\n", retv);
 
   // free SX127x module
-  //sx127x_free(&radio);
+  sx127x_free(&radio);
 
   // free SPI
   spi_free(&spi);

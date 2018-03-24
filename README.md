@@ -6,7 +6,7 @@ Connect Ra-01/Ra-02 module base on LoRaTM SX127x chip to Orange Pi
 2. This this free and open source software
 3. Author: Alex Zorg azorg(at)mail.ru
 4. Licenced by GPLv3
-5. Tested on Orange Pi Zero, Orange Pi Win Plus (in plans)
+5. Tested on Orange Pi Zero (Pi One and Pi Win Plus in plans)
 6. Sources based on:
   * https://github.com/azorg/sx127x_esp
   * https://github.com/azorg/spi
@@ -34,21 +34,25 @@ Connect Ra-01/Ra-02 module base on LoRaTM SX127x chip to Orange Pi
 ## Orange Pi Win Plus 40 pin connector
 ...
 
-## Connect LoRa SX1278 module to you Orange Pi
+## Orange Pi One 40 pin connector
+...
 
-|   GPIO   |    Pi Zero   | Pi Win Plus |   Signal    | SX1278 (color)  |
-|:--------:|:------------:|:-----------:|:----------- |:--------------- |
-|     6    |       7      |             | IRQ         | DIO0  (yellow)  |
-|     7    |      12      |             | HARD RESET  | RESET (magenta) |
-|    15    |      19      |             | MOSI        | MOSI  (green)   |
-|    16    |      21      |             | MISO        | MISO  (blue)    |
-|    14    |      23      |             | SCK         | SCK   (white)   |
-|    18    |      18      |             | CS          | NSS   (grey)    |
-|    19    |      16      |             | DATA *      | DIO2  (brown)   |
-|    10    |      26      |             | DCLK **     | DIO1  (orange)  |
-|    13    |      24      |             | LED         | -               |
-|    -     |   1 or 17    |             | 3.3V        | 3.3V  (red)     |
-|    -     | 25,20,14,9,6 |             | GND         | GND   (black)   |
+## Connect LoRa SX1278 module to you Orange Pi (Zero, Win Plus or One)
+
+| GPIO | Pi Zero | Pi Win+ | Pi One  | Signal  | SX1278 (color)  |
+|:----:|:-------:|:-------:|:-------:|:------- |:--------------- |
+|   6  |    7    |    ?    |    ?    | IRQ     | DIO0  (yellow)  |
+|   7  |   12    |    ?    |    ?    | RESET   | RESET (magenta) |
+|  15  |   19    |    ?    |    ?    | MOSI    | MOSI  (green)   |
+|  16  |   21    |    ?    |    ?    | MISO    | MISO  (blue)    |
+|  14  |   23    |    ?    |    ?    | SCK     | SCK   (white)   |
+|  18  |   18    |    ?    |    ?    | CS      | NSS   (grey)    |
+|  19  |   16    |    ?    |    ?    | DATA *  | DIO2  (brown)   |
+|  10  |   26    |    ?    |    ?    | DCLK ** | DIO1  (orange)  |
+|  13  |   24    |    ?    |    ?    | LED     | -               |
+|  -   | 1 or 17 |    ?    |    ?    | 3.3V    | 3.3V  (red)     |
+|  -   | 25,20,  |    ?    |    ?    | GND     | GND   (black)   |
+|  -   | 14,9,6  |    ?    |    ?    | GND     | -               |
 
 Note (*):  DIO2(DATA) is optional and may used in continuous FSK/OOK mode
 

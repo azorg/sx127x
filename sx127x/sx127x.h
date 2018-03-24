@@ -60,6 +60,7 @@ typedef struct sx127x_pars_ {
   u8_t  max_power;  // `MaxPower` parametr 0...7 (7 by default)
   bool  pa_boost;   // true - use PA_BOOT out pin, false - use RFO out pin
   bool  high_power; // if true then add +3 dB to power on PA_BOOST output pin
+  u8_t  ocp;        // OCP trimmer [mA] (0 <=> OCP off)
   bool  crc;        // CRC in packet modes false - off, true - on
 
   // LoRaTM mode pars:
@@ -123,12 +124,6 @@ extern "C"
 {
 #endif // __cplusplus
 //----------------------------------------------------------------------------
-// read SX127x 8-bit register from SPI
-u8_t sx127x_read_reg(sx127x_t *self, u8_t address);
-//-----------------------------------------------------------------------------
-// write SX127x 8-bit register to SPI
-void sx127x_write_reg(sx127x_t *self, u8_t address, u8_t value);
-//----------------------------------------------------------------------------
 // init SX127x radio module
 int sx127x_init(
   sx127x_t *self,
@@ -166,6 +161,12 @@ void sx127x_on_receive(
     bool crc,                  // CRC ok/false
     void *context),            // optional context
   void *on_receive_context); // optional on_receive() context
+//----------------------------------------------------------------------------
+// read SX127x 8-bit register from SPI
+u8_t sx127x_read_reg(sx127x_t *self, u8_t address);
+//-----------------------------------------------------------------------------
+// write SX127x 8-bit register to SPI
+void sx127x_write_reg(sx127x_t *self, u8_t address, u8_t value);
 //----------------------------------------------------------------------------
 // setup SX127x radio module (uses from sx127x_init())
 i16_t sx127x_set_pars(

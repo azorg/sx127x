@@ -16,6 +16,7 @@ sx127x_pars_t sx127x_pars_default = {
   7,         // `MaxPower` parametr 0...7 (7 by default)
   true,      // true - use PA_BOOT out pin, false - use RFO out pin
   false,     // if true then add +3 dB to power on PA_BOOST output pin
+  200,       // OCP trimmer [mA] (0 <=> OCP off)
   false,     // CRC in packet modes false - off, true - on
 
   // LoRaTM mode:
@@ -101,18 +102,6 @@ static u8_t sx127x_spi_exchange(sx127x_t *self, u8_t address, u8_t value)
   return rx_buf[1];
 }
 //-----------------------------------------------------------------------------
-// read SX127x 8-bit register from SPI
-u8_t sx127x_read_reg(sx127x_t *self, u8_t address)
-{
-  return sx127x_spi_exchange(self, address & 0x7F, 0);
-}
-//-----------------------------------------------------------------------------
-// write SX127x 8-bit register to SPI
-void sx127x_write_reg(sx127x_t *self, u8_t address, u8_t value)
-{
-  sx127x_spi_exchange(self, address | 0x80, value);
-}
-//-----------------------------------------------------------------------------
 // init SX127x radio module
 int sx127x_init(
   sx127x_t *self,
@@ -171,6 +160,18 @@ void sx127x_on_receive(
   self->on_receive         = on_receive;
   self->on_receive_context = on_receive_context;
 }
+//-----------------------------------------------------------------------------
+// read SX127x 8-bit register from SPI
+u8_t sx127x_read_reg(sx127x_t *self, u8_t address)
+{
+  return sx127x_spi_exchange(self, address & 0x7F, 0);
+}
+//-----------------------------------------------------------------------------
+// write SX127x 8-bit register to SPI
+void sx127x_write_reg(sx127x_t *self, u8_t address, u8_t value)
+{
+  sx127x_spi_exchange(self, address | 0x80, value);
+}
 //----------------------------------------------------------------------------
 // setup SX127x radio module (uses from sx127x_init())
 i16_t sx127x_set_pars(
@@ -182,7 +183,7 @@ i16_t sx127x_set_pars(
   if (pars == (sx127x_pars_t*) NULL)
     pars = &sx127x_pars_default; // use default pars
 
-  // chek version
+  // check version
   version = sx127x_version(self);
   SX127X_DBG("selicon revision = 0x%02X", version);
   if (version != 0x12)
@@ -202,6 +203,15 @@ i16_t sx127x_set_pars(
   // set output power level
   sx127x_set_power_ex(self, pars->pa_boost,
                             pars->out_power, pars->max_power);
+
+  // set high power (+3 dB) on PA_BOOST pin (up to +20 dBm output power)
+  sx127x_set_high_power(self, pars->high_power);
+
+  // set trimming of OCP current (45...240 mA)
+  if (pars->ocp)
+    sx127x_set_ocp(self, pars->ocp, true);
+  else
+    sx127x_set_ocp(self, 120, false);
 
   // enable/disable CRC (`CrcAutoClearOff`->0)
   sx127x_enable_crc(self, pars->crc, false);

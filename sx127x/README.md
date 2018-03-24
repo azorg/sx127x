@@ -27,6 +27,16 @@
 
 - portable open source code
 
+## Files
+
+- "sx127x_defs" - SX127x chip define's (may not includes in users program)
+
+- "sx127x.h" - main header to include in users programm
+
+- "sx127x.c" - main compilation unit of this module
+
+- "README.md" - this file
+
 ## Main functions
 
 * sx127x_init() - constructor
@@ -52,16 +62,6 @@
 * sx127x_continuous() - continuous mode (no packet)
 
 Look "sx127x.h" header file for details.
-
-## Files
-
-- "sx127x_defs" - SX127x chip define's (may not includes in users program)
-
-- "sx127x.h" - main header to include in users programm
-
-- "sx127x.c" - main compilation unit of this module
-
-- "README.md" - this file
 
 
 

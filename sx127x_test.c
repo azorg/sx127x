@@ -73,7 +73,7 @@ static int timer_handler(void *context)
 }
 //-----------------------------------------------------------------------------
 // IRQ waiting thread
-static void *thread_fn(void *arg)
+static void *thread_irq_fn(void *arg)
 {
   printf(">>> start irq_thread()\n");
   pause(); //FIXME This statement only for debug!!!

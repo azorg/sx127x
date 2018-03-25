@@ -15,10 +15,10 @@
 #include "sx127x_def.h" // SX127x define's
 //-----------------------------------------------------------------------------
 // demo mode
-#define DEMO_MODE 3 // 1 - transmitter, 2 - receiver, 3 - morse beeper
+#define DEMO_MODE 1 // 1 - transmitter, 2 - receiver, 3 - morse beeper
 
 // radio mode
-#define RADIO_MODE 1 // 0 - LoRa, 1 - FSK, 2 - OOK
+#define RADIO_MODE 0 // 0 - LoRa, 1 - FSK, 2 - OOK
 
 // timer interval
 #define TIMER_INTERVAL 1000 // ms

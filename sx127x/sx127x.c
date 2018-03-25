@@ -943,7 +943,7 @@ i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size)
 
   if (self->mode == SX127X_LORA) // LoRa mode
   {
-    u8_t current_length; 
+    i16_t current_length; 
     sx127x_impl_hdr(self, false); // FIXME: check!
   
     // reset FIFO address and paload length 
@@ -951,17 +951,18 @@ i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size)
     sx127x_write_reg(self, REG_PAYLOAD_LENGTH, 0);
 
     // check size
-    current_length = sx127x_read_reg(self, REG_PAYLOAD_LENGTH);
-    size = SX127X_MIN(size, (MAX_PKT_LENGTH - FIFO_TX_BASE_ADDR - current_length));
+    current_length = (i16_t) sx127x_read_reg(self, REG_PAYLOAD_LENGTH);
+    size = SX127X_MIN(size, (MAX_PKT_LENGTH - FIFO_TX_BASE_ADDR -
+                             current_length));
 
     // write data to FIFO
     for (i = 0; i < size; i++)
       sx127x_write_reg(self, REG_FIFO, data[i]);
 
     // update length
-    sx127x_write_reg(self, REG_PAYLOAD_LENGTH, current_length + size);
+    sx127x_write_reg(self, REG_PAYLOAD_LENGTH, (u8_t)(current_length + size));
 
-    // start TX mode
+    // start TX packet
     sx127x_tx(self);
 
     // wait for TX done, standby automatically on TX_DONE
@@ -1005,7 +1006,7 @@ i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size)
     for (i = 0; i < size; i++)
       sx127x_write_reg(self, REG_FIFO, data[i]);
     
-    // start TX mode
+    // start TX packet
     sx127x_tx(self);
     
     // wait `TxRaedy` (bit 5 in `RegIrqFlags1`)
@@ -1134,9 +1135,9 @@ void sx127x_irq_handler(sx127x_t *self)
 
   // run callback
   if (self->on_receive != (void (*)(sx127x_t*, u8_t*, u8_t, bool, void*)) NULL)
-    self->on_receive(self, self->payload, payload_len, crc_ok,
+    self->on_receive(self, self->payload, payload_len,
+                     self->crc ? crc_ok : true,
                      self->on_receive_context);
-
 }
 //----------------------------------------------------------------------------
 

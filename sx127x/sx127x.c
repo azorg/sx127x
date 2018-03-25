@@ -16,7 +16,7 @@ sx127x_pars_t sx127x_pars_default = {
   7,         // `MaxPower` parametr 0...7 (7 by default)
   true,      // true - use PA_BOOT out pin, false - use RFO out pin
   false,     // if true then add +3 dB to power on PA_BOOST output pin
-  200,       // OCP trimmer [mA] (0 <=> OCP off)
+  220,       // OCP trimmer [mA] (0 <=> OCP off)
   false,     // CRC in packet modes false - off, true - on
 
   // LoRaTM mode:
@@ -174,15 +174,22 @@ i16_t sx127x_set_pars(
   const sx127x_pars_t *pars) // configuration parameters or NULL
 {
   u8_t version;
+  i16_t retv = SX127X_ERR_NONE;
   
   if (pars == (sx127x_pars_t*) NULL)
     pars = &sx127x_pars_default; // use default pars
 
   // check version
   version = sx127x_version(self);
-  SX127X_DBG("selicon revision = 0x%02X", version);
-  if (version != 0x12)
-    return SX127X_ERR_VERSION;
+  if (version == 0x12)
+  {
+    SX127X_DBG("selicon revision = 0x%02X [OK]", version);
+  }
+  else
+  {
+    SX127X_DBG("selicon revision = 0x%02X [FAIL]", version);
+    retv = SX127X_ERR_VERSION;
+  }
 
   // switch mode
   if      (self->mode == SX127X_FSK) sx127x_fsk(self);  // FSK
@@ -277,7 +284,7 @@ i16_t sx127x_set_pars(
 
   sx127x_standby(self);
 
-  return SX127X_ERR_NONE;
+  return retv;
 }
 //----------------------------------------------------------------------------
 // get SX127x crystal revision
@@ -528,14 +535,15 @@ void sx127x_set_ocp(sx127x_t *self, u8_t trim_mA, bool on)
 
   trim = SX127X_LIMIT(trim, 0, 27);
   
+  SX127X_DBG("set trimming of OCP current to %i mA; OCP is %s",
+             trim <= 15 ? trim * 5 + 45 : trim * 10 - 30,
+	     on ? "on" : "off");
+
   if (on)
     trim |= 0x20; // `OcpOn`
 
   sx127x_write_reg(self, REG_OCP, (u8_t) (trim & 0xFF));
 
-  SX127X_DBG("set trimming of OCP current to %i mA; OCP is %s",
-             trim <= 15 ? trim * 5 + 45 : trim * 10 - 30,
-	     on ? "on" : "off");
 }
 //----------------------------------------------------------------------------
 // set modulation shaping code 0..3 (FSK/OOK)

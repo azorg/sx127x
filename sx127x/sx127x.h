@@ -23,7 +23,7 @@
 //----------------------------------------------------------------------------
 #ifdef SX127X_DEBUG
 #  include <stdio.h> // fprintf()
-#    define SX127X_DBG(fmt, arg...) fprintf(stderr, "SX127X: " fmt "\n", ## arg)
+#    define SX127X_DBG(fmt, arg...) fprintf(stderr, "SX127x: " fmt "\n", ## arg)
 #else
 #  define SX127X_DBG(fmt, ...) // debug output off
 #endif // SX127X_DEBUG

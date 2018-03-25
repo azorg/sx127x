@@ -47,7 +47,7 @@
 #define SPI_SPEED 5000000 // 5 MHz
 //-----------------------------------------------------------------------------
 // global variables
-spi_t    spi;
+spi_t spi;
 
 #ifdef GPIO_IRQ
 sgpio_t  gpio_irq;   // in IRQ
@@ -132,7 +132,6 @@ static void *thread_irq_fn(void *arg)
 static inline void spi_cs(bool cs)
 {
 #ifdef GPIO_CS
-  printf(">>> spi_cs(%s)\n", cs ? "true" : "false"); // FIXME
   sgpio_set(&gpio_cs, cs ? 0 : 1); // negative CS
 #endif // GPIO_CS
 }
@@ -175,11 +174,13 @@ int on_spi_exchange(
   retv = spi_exchange(spi, (char*) rx_buf, (const char*) tx_buf, (int) len);
   spi_cs(false); // unselect crystall
 
+#if 0
   // FIXME SPI debug
   printf(">>> spi_exchange([0x%02X, 0x%02X], len=%d) "
          "return ([0x%02X, 0x%02X], retv=%d)\n",
          tx_buf[0], tx_buf[1], (int) len,
          rx_buf[0], rx_buf[1], (int) retv);
+#endif
 
   return retv;
 }
@@ -269,8 +270,7 @@ int main()
                   SPI_SPEED); // max speed [Hz]
   printf(">>> spi_init(device='%s', speed=%d) return %d\n",
          SPI_DEVICE, SPI_SPEED, retv);
-  // FIXME
-  // if (retv != 0) exit(EXIT_FAILURE);
+  if (retv != 0) exit(EXIT_FAILURE);
 
   // creade listen IRQ threads
   vsthread_create(32, SCHED_FIFO, &thread_irq, thread_irq_fn, NULL);
@@ -279,6 +279,9 @@ int main()
   retv = stimer_sigint(sigint_handler, (void*) NULL);
   printf(">>> stimer_sigint_handler() return %d\n", retv);
   if (retv != 0) exit(EXIT_FAILURE);
+
+  // hard reset SX127x radio module
+  reset_radio();
 
   // setup SX127x module
   sx127x_init(
@@ -289,9 +292,6 @@ int main()
       (const sx127x_pars_t *) NULL, // configuration parameters or NULL
       (void*) &spi,    // optional SPI exchange context
       (void*) NULL);   // optional on_receive() context
-
-  // hard reset SX127x radio module
-  reset_radio();
 
   // setup timer
   retv = stimer_init(&timer, timer_handler, (void*) NULL);

@@ -37,6 +37,9 @@ Connect Ra-01/Ra-02 module base on LoRaTM SX127x chip to Orange Pi
 ## Orange Pi One 40 pin connector
 ...
 
+## Raspbery Pi B+ 40 pin connector
+...
+
 ## Connect LoRa SX1278 module to you Orange Pi (Zero, Win Plus or One)
 
 | GPIO | Pi Zero | Pi Win+ | Pi One  | Signal  | SX1278 (color)  |

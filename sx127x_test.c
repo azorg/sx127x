@@ -64,11 +64,41 @@ static void sigint_handler(void *context)
   fprintf(stderr, "\nCtrl-C pressed\n");
 } 
 //-----------------------------------------------------------------------------
+// blink LED
+void blink_led()
+{
+  printf(">>> blink_led()\n"); // FIXME
+  sgpio_set(&gpio_led, 0);
+  stimer_sleep_ms(100.);
+  sgpio_set(&gpio_led, 1);
+  stimer_sleep_ms(20.);
+}
+//-----------------------------------------------------------------------------
+// hard reset SX127x radio module
+void reset_radio()
+{
+  printf(">>> reset_radio()\n");
+  sgpio_set(&gpio_reset, 1);
+  stimer_sleep_ms(100.);
+  sgpio_set(&gpio_reset, 0);
+  stimer_sleep_ms(100.);
+  sgpio_set(&gpio_reset, 1);
+  stimer_sleep_ms(100.);
+}
+//-----------------------------------------------------------------------------
 // periodic timer handler (main periodic function)
 static int timer_handler(void *context)
 {
+  u8_t version;
   printf(">>> start timer_handrer()\n");
   //...
+  
+  //FIXME !!!
+  version = sx127x_version(&radio);
+  printf(">>> SX127x selicon revision = 0x%02X\n", version);
+  reset_radio();
+  blink_led();
+
   return 0;
 }
 //-----------------------------------------------------------------------------
@@ -76,7 +106,7 @@ static int timer_handler(void *context)
 static void *thread_irq_fn(void *arg)
 {
   printf(">>> start irq_thread()\n");
-  pause(); //FIXME This statement only for debug!!!
+  //!!!pause(); //FIXME This statement only for debug!!!
   while (1)
   {
     // wait interrupt
@@ -104,28 +134,6 @@ int on_spi_exchange(
   return spi_exchange(spi, (char*) rx_buf, (const char*) tx_buf, (int) len);
 }
 //-----------------------------------------------------------------------------
-// blink LED
-void blink_ked()
-{
-  printf(">>> blink_led()\n"); // FIXME
-  sgpio_set(&gpio_led, 0);
-  stimer_sleep_ms(100.);
-  sgpio_set(&gpio_led, 1);
-  stimer_sleep_ms(20.);
-}
-//-----------------------------------------------------------------------------
-// hard reset SX127x radio module
-void reset_radio()
-{
-  printf(">>> reset_radio()\n");
-  sgpio_set(&gpio_reset, 1);
-  stimer_sleep_ms(100.);
-  sgpio_set(&gpio_reset, 0);
-  stimer_sleep_ms(100.);
-  sgpio_set(&gpio_reset, 1);
-  stimer_sleep_ms(100.);
-}
-//-----------------------------------------------------------------------------
 // receive callback
 void on_receive(
     sx127x_t *self,     // pointer to sx127x_t object
@@ -135,7 +143,7 @@ void on_receive(
     void *context)      // optional context
 {
   fprintf(stderr, ">>> start on_receive()\n");
-  blink_ked();
+  blink_led();
   //... FIXME
 
 }

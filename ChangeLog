@@ -2,6 +2,10 @@
  * fix megabug in sx127x_spi_transfer()
  * fix sx127x_set_ocp()
  * first transmitter test
+ * fix sx127x_set_fdev()
+ * update sx127x_set_frequency()
+ + add sx127x_update_band()
+ + add some debug output
 
 2018.03.23: Alex Zorg <azorg(at)mail.ru>
  * work in process

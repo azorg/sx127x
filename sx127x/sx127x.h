@@ -41,10 +41,6 @@ typedef u8_t bool;
 #define true  1
 #define false 0
 //----------------------------------------------------------------------------
-// float types
-//typedef float f32_t;
-//typedef double f64_t;
-//----------------------------------------------------------------------------
 // SX127x radio mode
 typedef enum {
   SX127X_LORA = 0, // LoRaTM 
@@ -206,10 +202,13 @@ void sx127x_rx(sx127x_t *self);
 void sx127x_cad(sx127x_t *self);
 //----------------------------------------------------------------------------
 // set RF frequency [Hz]
-void sx127x_set_frequency(sx127x_t *self, u32_t freq);
+u32_t sx127x_set_frequency(sx127x_t *self, u32_t freq);
 //----------------------------------------------------------------------------
 // get RF frequency [Hz]
 u32_t sx127x_get_frequency(sx127x_t *self);
+//----------------------------------------------------------------------------
+// update band after change RF frequency from one band to another
+void sx127x_update_band(sx127x_t *self);
 //----------------------------------------------------------------------------
 // set LNA boost on/off (only for high frequency band)
 void sx127x_set_lna_boost(sx127x_t *self, bool lna_boost);
@@ -286,7 +285,7 @@ void sx127x_continuous(sx127x_t *self, bool on);
 void sx127x_rx_calibrate(sx127x_t *self);
 //----------------------------------------------------------------------------
 // set bitrate (>= 500 bit/s) (FSK/OOK)
-void sx127x_set_bitrate(sx127x_t *self, u32_t bitrate, i16_t frac);
+u32_t sx127x_set_bitrate(sx127x_t *self, u32_t bitrate, i16_t frac);
 //----------------------------------------------------------------------------
 // set frequency deviation [Hz] (FSK)
 void sx127x_set_fdev(sx127x_t *self, u32_t fdev);

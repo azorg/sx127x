@@ -18,7 +18,7 @@
 #define DEMO_MODE 3 // 1 - transmitter, 2 - receiver, 3 - morse beeper
 
 // radio mode
-#define RADIO_MODE 2 // 0 - LoRa, 1 - FSK, 2 - OOK
+#define RADIO_MODE 1 // 0 - LoRa, 1 - FSK, 2 - OOK
 
 // timer interval
 #define TIMER_INTERVAL 1000 // ms
@@ -387,9 +387,10 @@ int main()
   // common settings
   sx127x_set_frequency(&radio, 434000000); // RF frequency [Hz]
   sx127x_set_power_dbm(&radio, 17);        // power +17dBm
-  sx127x_set_high_power(&radio, false);     // add +3 dB on PA_BOOST pin
+  sx127x_set_high_power(&radio, false);    // add +3 dB on PA_BOOST pin
   sx127x_set_ocp(&radio, 230, true);       // set OCP trimming [mA]
   sx127x_enable_crc(&radio, true, true);   // CRC=on, CrcAutoClearOff=on
+  sx127x_set_pll_bw(&radio, 1);            // 0=75, 1=150, 2=225, 3=300 kHz
 
   if (sx127x_is_lora(&radio))
   { // LoRa settings
@@ -427,7 +428,8 @@ int main()
   }
   else if (demo_mode == 3)
   { // morse beeper
-    data_on(0);
+    data_on(0); // off OOK modulation
+    sx127x_set_fast_hop(&radio, true);
     sx127x_continuous(&radio, true); // switch to continuous mode
   }
 

@@ -27,6 +27,8 @@
 
 - portable open source code
 
+- floating point not used
+
 ## Files
 
 - "sx127x_defs" - SX127x chip define's (may not includes in users program)

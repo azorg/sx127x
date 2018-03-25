@@ -512,39 +512,61 @@ i16_t sx127x_get_snr(sx127x_t *self)
 // 2. if RFO pin selected then:
 //    Pmax = 10.8 + 0.6 * max_power = 10.8...15 dBm
 //    Pout = Pmax - 15 + out_power  = -4.2...15 dBm
-void sx127x_set_power_ex(sx127x_t *self,
+i8_t sx127x_set_power_ex(sx127x_t *self,
                          bool pa_boost,  // `PA_BOOST`    true/false
                          u8_t out_power, // `OutputPower` 0...15 dB
                          u8_t max_power) // `MaxPower`    0...7 (7=default)
 {
+  i16_t out;
   out_power = SX127X_LIMIT(out_power, 0, 15);
   max_power = SX127X_LIMIT(max_power, 0, 7);
 
   self->pa_boost = pa_boost;
-  if (pa_boost) // select PA_BOOST pin
+  if (pa_boost)
+  { // select PA_BOOST pin
     sx127x_write_reg(self, REG_PA_CONFIG, out_power | PA_SELECT);
-  else          // select RFO pin
+    out = 2 + out_power; // dBm
+  }
+  else
+  { // select RFO pin
     sx127x_write_reg(self, REG_PA_CONFIG, out_power | (max_power << 4));
+    out = ((108 - 150 + 5) + 6 * max_power + 10 * out_power) / 10; // dBm
+  }
+
+  SX127X_DBG("set Output Power to %i dBm on %s pin",
+             out, pa_boost ? "PA_BOOST" : "RFO");
+
+  return (i8_t) out;
 }
 //----------------------------------------------------------------------------
 // set TX output power: -4...+15 dBm on RFO or +2...+17 dBm on PA_BOOST
-void sx127x_set_power_dbm(sx127x_t *self, i8_t dBm)
+i8_t sx127x_set_power_dbm(sx127x_t *self, i8_t dBm)
 {
+  i16_t out;
+  
   if (self->pa_boost)
   { // +2...+17 dBm on PA_BOOST pin
     u8_t out_power = (u8_t) SX127X_LIMIT(dBm - 2, 0, 15);
     sx127x_write_reg(self, REG_PA_CONFIG, out_power | PA_SELECT);
+    out = 2 + out_power; // dBm
   }
   else if (dBm >= 6)
   { // 0...+15 dBm on RFO pin (`MaxPower`=7)
     u8_t out_power = (u8_t) SX127X_LIMIT(dBm, 0, 15);
     sx127x_write_reg(self, REG_PA_CONFIG, out_power | (7 << 4));
+    out = ((108 + 6 * 7 - 150 + 5) + 10 * out_power) / 10; // dBm
   }
   else
   { // -4...+10 dBm on RFO pin (`MaxPower`=0)
     u8_t out_power = (u8_t) SX127X_LIMIT(dBm + 4, 0, 15);
     sx127x_write_reg(self, REG_PA_CONFIG, out_power);
+    out = ((108 + 6 * 0 - 150 + 5) + 10 * out_power) / 10; // dBm
   }
+  
+  SX127X_DBG("set Output Power to %i dBm on %s pin",
+             out, self->pa_boost ? "PA_BOOST" : "RFO");
+  
+  return (i8_t) out;
 }
 //----------------------------------------------------------------------------
 // set high power (+3 dB) on PA_BOOST pin (up to +20 dBm output power)
@@ -555,6 +577,9 @@ void sx127x_set_high_power(sx127x_t *self, bool on)
     sx127x_write_reg(self, REG_PA_DAC, 0x87);
   else
     sx127x_write_reg(self, REG_PA_DAC, 0x84);
+    
+  SX127X_DBG("set High Power mode (+3 dB on PA_BOOST pin) to '%s'",
+             on ? "On" : "Off");
 }
 //----------------------------------------------------------------------------
 // set trimming of OCP current (45...240 mA)
@@ -592,6 +617,8 @@ void sx127x_set_ramp(sx127x_t *self, u8_t shaping, u8_t ramp)
   reg = sx127x_read_reg(self, REG_PA_RAMP);
   reg = (reg & 0x90) | (shaping << 5) | ramp;
   sx127x_write_reg(self, REG_PA_RAMP, reg);
+
+  SX127X_DBG("set Shaping=%d and Ramp=%d", (int) shaping, (int) ramp);
 }
 //----------------------------------------------------------------------------
 // enable/disable CRC, set/unset `CrcAutoClearOff` in FSK/OOK mode

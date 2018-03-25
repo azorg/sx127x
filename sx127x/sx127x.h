@@ -229,13 +229,13 @@ i16_t sx127x_get_snr(sx127x_t *self);
 // 2. if RFO pin selected then:
 //    Pmax = 10.8 + 0.6 * max_power = 10.8...15 dBm
 //    Pout = Pmax - 15 + out_power  = -4.2...15 dBm
-void sx127x_set_power_ex(sx127x_t *self,
+i8_t sx127x_set_power_ex(sx127x_t *self,
                          bool pa_boost,   // `PA_BOOST`    true/false
                          u8_t out_power,  // `OutputPower` 0...15 dB
                          u8_t max_power); // `MaxPower`    0...7 (7=default)
 //----------------------------------------------------------------------------
 // set TX output power: -4...+15 dBm on RFO or +2...+17 dBm on PA_BOOST
-void sx127x_set_power_dbm(sx127x_t *self, i8_t dbm);
+i8_t sx127x_set_power_dbm(sx127x_t *self, i8_t dbm);
 //----------------------------------------------------------------------------
 // set high power (+3 dB) on PA_BOOST pin (up to +20 dBm output power)
 void sx127x_set_high_power(sx127x_t *self, bool on);

@@ -182,7 +182,7 @@ u8_t sx127x_get_mode(sx127x_t *self);
 void sx127x_lora(sx127x_t *self);
 //----------------------------------------------------------------------------
 // check LoRa (or FSK/OOK) mode
-bool sx12x_is_lora(sx127x_t *self);
+bool sx127x_is_lora(sx127x_t *self);
 //----------------------------------------------------------------------------
 // switch to FSK mode
 void sx127x_fsk(sx127x_t *self);

@@ -320,7 +320,7 @@ void sx127x_lora(sx127x_t *self)
 }
 //----------------------------------------------------------------------------
 // check LoRa (or FSK/OOK) mode
-bool sx12x_is_lora(sx127x_t *self)
+bool sx127x_is_lora(sx127x_t *self)
 {
   u8_t mode = sx127x_read_reg(self, REG_OP_MODE); // read mode
   return (mode & MODE_LONG_RANGE) ? true : false;

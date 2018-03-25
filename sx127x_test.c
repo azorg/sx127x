@@ -15,10 +15,14 @@
 #include "sx127x_def.h" // SX127x define's
 //-----------------------------------------------------------------------------
 // demo mode
-#define DEMO_MODE 1 // 1 - transmitter, 2 - receiver, 3 - morse beeper
+#define DEMO_MODE 3 // 1 - transmitter, 2 - receiver, 3 - morse beeper
 
 // radio mode
-#define RADIO_MODE 0 // 0 - LoRa, 1 - FSK, 2 - OOK
+#define RADIO_MODE 2 // 0 - LoRa, 1 - FSK, 2 - OOK
+
+// timer interval
+#define TIMER_INTERVAL 1000 // ms
+
 //-----------------------------------------------------------------------------
 #define ORANGE_PI_ZERO
 //#define ORANGE_PI_ONE
@@ -32,7 +36,7 @@
 #  define GPIO_RESET   7  // pin 12 of 26 (GPIO.1)
 #  define GPIO_CS      13 // pin 24 of 26 (CE0)
 #  define GPIO_DATA    19 // pin 16 of 26 (GPIO.4)
-//#  define GPIO_LED   18 // pin 18 of 26 (GPIO.5)
+#  define GPIO_LED     18 // pin 18 of 26 (GPIO.5)
 //#  define GPIO_LED   3  // pin 15 of 26 (CTS2)
 //#  define GPIO_LED   2  // pin 22 of 26 (RTS2)
 #elif defined(ORANGE_PI_ONE)
@@ -56,8 +60,8 @@
 //-----------------------------------------------------------------------------
 // global variables
 spi_t spi;
-int global_stop = 0;     // global stop flag
-double interval = 4000.; // timer interval [ms]
+int global_stop = 0; // global stop flag
+double interval = TIMER_INTERVAL; // [ms]
 stimer_t timer;
 vsthread_t thread_irq;
 sx127x_t radio;
@@ -104,7 +108,7 @@ void data_on(int on)
 void led_on(int on)
 {
 #ifdef GPIO_LED
-  sgpio_set(&gpio_led, on ? 0 : 1);
+  sgpio_set(&gpio_led, on ? 1 : 0);
 #endif // GPIO_LED
 }
 //-----------------------------------------------------------------------------
@@ -268,7 +272,7 @@ static int timer_handler(void *context)
     led_on(1);
     data_on(1);
 
-    stimer_sleep_ms(250); // FIXME
+    stimer_sleep_ms(100); // FIXME
     
     led_on(0);
     data_on(0);
@@ -383,17 +387,17 @@ int main()
   // common settings
   sx127x_set_frequency(&radio, 434000000); // RF frequency [Hz]
   sx127x_set_power_dbm(&radio, 17);        // power +17dBm
-  sx127x_set_high_power(&radio, true);     // add +3 dB on PA_BOOST pin
+  sx127x_set_high_power(&radio, false);     // add +3 dB on PA_BOOST pin
   sx127x_set_ocp(&radio, 230, true);       // set OCP trimming [mA]
   sx127x_enable_crc(&radio, true, true);   // CRC=on, CrcAutoClearOff=on
 
   if (sx127x_is_lora(&radio))
   { // LoRa settings
-    sx127x_set_bw(      &radio, 125000); // BW: 78000...500000 Hz
+    sx127x_set_bw(      &radio, 250000); // BW: 78000...500000 Hz
     sx127x_set_cr(      &radio, 5);      // CR: 5..8
-    sx127x_set_sf(      &radio, 10);     // SF: 6...12
-    sx127x_set_ldro(    &radio, true);   // Low Datarate Optimize
-    sx127x_set_preamble(&radio, 8);      // 6..65535 (8 by default)
+    sx127x_set_sf(      &radio, 7);      // SF: 6...12
+    sx127x_set_ldro(    &radio, false);  // Low Datarate Optimize
+    sx127x_set_preamble(&radio, 6);      // 6..65535 (8 by default)
     sx127x_set_sw(      &radio, 0x12);   // SW allways 0x12
   }
   else
@@ -410,6 +414,8 @@ int main()
   // preapre to run one of demo application
   if (demo_mode == 1)
   { // transmitter
+    // UNSET!!! callback on receive packet (Lora/FSK/OOK)
+    sx127x_on_receive(&radio, NULL, NULL); // FIXME
   }
   else if (demo_mode == 2)
   { // receiver

@@ -2,6 +2,7 @@ Connect Ra-01/Ra-02 module base on LoRaTM SX127x chip to Orange Pi
 ==================================================================
 
 ### Notes
+0. THIS CODE IS DO NOW WORK YET! WORK IN PROCESS.
 1. This is experimental example, not software product ready for use
 2. This this free and open source software
 3. Author: Alex Zorg azorg(at)mail.ru
@@ -29,7 +30,7 @@ Connect Ra-01/Ra-02 module base on LoRaTM SX127x chip to Orange Pi
  |  15  |   MOSI | 19 | 20 | 0V      |      |
  |  16  |   MISO | 21 | 22 | RTS2    | 2    |
  |  14  |   SCLK | 23 | 24 | CE0     | 13   |
- |      |     0v | 25 | 26 | GPIO.11 | 10   |
+ |      |     0V | 25 | 26 | GPIO.11 | 10   |
 
 ## Orange Pi Win Plus 40 pin connector
 ...
@@ -49,10 +50,10 @@ Connect Ra-01/Ra-02 module base on LoRaTM SX127x chip to Orange Pi
 |  15  |   19    |    ?    |    ?    | MOSI    | MOSI  (green)   |
 |  16  |   21    |    ?    |    ?    | MISO    | MISO  (blue)    |
 |  14  |   23    |    ?    |    ?    | SCK     | SCK   (white)   |
-|  18  |   18    |    ?    |    ?    | CS      | NSS   (grey)    |
+|  13  |   24    |    ?    |    ?    | CS      | NSS   (grey)    |
 |  19  |   16    |    ?    |    ?    | DATA *  | DIO2  (brown)   |
-|  10  |   26    |    ?    |    ?    | DCLK ** | DIO1  (orange)  |
-|  13  |   24    |    ?    |    ?    | LED     | -               |
+|  -   |   -     |    ?    |    ?    | DCLK ** | DIO1  (orange)  |
+|  18  |   18    |    ?    |    ?    | LED     | -               |
 |  -   | 1 or 17 |    ?    |    ?    | 3.3V    | 3.3V  (red)     |
 |  -   | 25,20,  |    ?    |    ?    | GND     | GND   (black)   |
 |  -   | 14,9,6  |    ?    |    ?    | GND     | -               |

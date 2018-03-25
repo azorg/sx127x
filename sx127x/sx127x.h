@@ -95,8 +95,6 @@ struct sx127x_ {
   bool crc;           // CRC in packet modes false - off, true - on
   bool impl_hdr;      // Implicit Header Mode on/off
   
-  void (*spi_cs)(bool cs); // SPI crystal select function                          
-  
   int (*spi_exchange)( // SPI exchange function
     u8_t       *rx_buf, // RX buffer
     const u8_t *tx_buf, // TX buffer
@@ -128,8 +126,6 @@ extern "C"
 int sx127x_init(
   sx127x_t *self,
   sx127x_mode_t mode, // radio mode: SX127X_LORA, SX127X_FSK, SX127X_OOK
-
-  void (*spi_cs)(bool cs), // SPI crystal select function                          
 
   int (*spi_exchange)( // SPI exchange function (return number or RX bytes)
     u8_t       *rx_buf, // RX buffer

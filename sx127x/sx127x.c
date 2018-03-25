@@ -84,30 +84,11 @@ static void sx127x_rx_bw_pack(u32_t bw, u8_t *m, u8_t *e)
   *m = sx127x_rf_bw_tbl[n - 1].m;
   *e = sx127x_rf_bw_tbl[n - 1].e;
 }
-//----------------------------------------------------------------------------
-// SPI transfer help function
-static u8_t sx127x_spi_exchange(sx127x_t *self, u8_t address, u8_t value)
-{
-  u8_t tx_buf[2], rx_buf[2];
-  
-  // prepare TX buffer
-  tx_buf[0] = address;
-  tx_buf[1] = value;
-
-  // transfe data over SPI
-  self->spi_cs(true); // select crystall
-  self->spi_exchange(tx_buf, rx_buf, 2, self->spi_exchange_context);
-  self->spi_cs(false); // unselect crystall
-  
-  return rx_buf[1];
-}
 //-----------------------------------------------------------------------------
 // init SX127x radio module
 int sx127x_init(
   sx127x_t *self,
   sx127x_mode_t mode, // radio mode: SX127X_LORA, SX127X_FSK, SX127X_OOK
-
-  void (*spi_cs)(bool cs), // SPI crystal select function                          
 
   int (*spi_exchange)( // SPI exchange function (return number or RX bytes)
     u8_t       *rx_buf, // RX buffer
@@ -129,7 +110,6 @@ int sx127x_init(
   if (mode != SX127X_FSK && mode != SX127X_OOK) mode = SX127X_LORA;
 
   self->mode         = mode;
-  self->spi_cs       = spi_cs;
   self->spi_exchange = spi_exchange;
   self->on_receive   = on_receive;
 
@@ -160,17 +140,32 @@ void sx127x_on_receive(
   self->on_receive         = on_receive;
   self->on_receive_context = on_receive_context;
 }
+//----------------------------------------------------------------------------
+// SPI transfer help function
+u8_t sx127x_spi_transfer(sx127x_t *self, u8_t address, u8_t value)
+{
+  u8_t tx_buf[2], rx_buf[2];
+  
+  // prepare TX buffer
+  tx_buf[0] = address;
+  tx_buf[1] = value;
+
+  // transfe data over SPI
+  self->spi_exchange(rx_buf, tx_buf, 2, self->spi_exchange_context);
+  
+  return rx_buf[1];
+}
 //-----------------------------------------------------------------------------
 // read SX127x 8-bit register from SPI
 u8_t sx127x_read_reg(sx127x_t *self, u8_t address)
 {
-  return sx127x_spi_exchange(self, address & 0x7F, 0);
+  return sx127x_spi_transfer(self, address & 0x7F, 0xFF);
 }
 //-----------------------------------------------------------------------------
 // write SX127x 8-bit register to SPI
 void sx127x_write_reg(sx127x_t *self, u8_t address, u8_t value)
 {
-  sx127x_spi_exchange(self, address | 0x80, value);
+  sx127x_spi_transfer(self, address | 0x80, value);
 }
 //----------------------------------------------------------------------------
 // setup SX127x radio module (uses from sx127x_init())
@@ -947,6 +942,8 @@ void sx127x_irq_handler(sx127x_t *self)
   bool crc_ok;
   i16_t payload_len;
   int i;
+    
+  SX127X_DBG("start sx127x_irq_handler()"); // FIXME
 
   if (self->mode == SX127X_LORA) // LoRa mode
   {

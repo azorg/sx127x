@@ -1,3 +1,6 @@
+2018.03.25: Alex Zorg <azorg(at)mail.ru>
+ * fix megabug in sx127x_spi_transfer()
+
 2018.03.23: Alex Zorg <azorg(at)mail.ru>
  * work in process
  * prepare all `sx127x_t` prototypes

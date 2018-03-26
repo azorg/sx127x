@@ -134,7 +134,7 @@
 
 // bits 6-5 `ModulationType` [FSK/OOK modes only]
 #define MODE_FSK    0x00 // 0b00 -> FSK
-#define MODE_OOK    0x40 // 0b01 -> OOK
+#define MODE_OOK    0x20 // 0b01 -> OOK
 #define MODES_MASK2 0x60 // Modes bit mask 2 
 
 // bit 6 (allows access to FSK registers in 0x0D:0x3F in LoRa mode)

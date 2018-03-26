@@ -1,3 +1,6 @@
  * fix bug with interrupt by send in FSK/OOK packet mode
- + add LoRa frequency hopping (`RegHoperiod`)
+ + add LoRa frequency hopping (`RegHopPeriod`)
+ + add RX single mode in LoRa to save battery energy
+ + fix TX tandom block in OOK mode
+
 

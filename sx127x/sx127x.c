@@ -227,7 +227,7 @@ i16_t sx127x_set_pars(
   else
     sx127x_set_ocp(self, 120, false);
 
-  // enable/disable CRC (`CrcAutoClearOff`->0)
+  // enable/disable CRC (`CrcAutoClearOff`=0)
   sx127x_enable_crc(self, pars->crc, false);
 
   if (self->mode == SX127X_LORA)
@@ -237,9 +237,9 @@ i16_t sx127x_set_pars(
     sx127x_set_sf(self, pars->sf); // SF
 
     if (pars->sf <= 6)
-      sx127x_impl_hdr(self, true); // "ImplicitHeaderMode"=1
+      sx127x_impl_hdr(self, true); // `ImplicitHeaderMode`=1
     else
-      sx127x_impl_hdr(self, pars->impl_hdr); // "ImplicitHeaderMode"
+      sx127x_impl_hdr(self, pars->impl_hdr); // `ImplicitHeaderMode`
     
     if (pars->ldro == 0)
       sx127x_set_ldro(self, false);          // LDRO off
@@ -990,6 +990,7 @@ i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size)
 {
   int i;
   sx127x_standby(self);
+  u32_t cnt;
 
   // check size
   if (size <= 0) return SX127X_ERR_BAD_SIZE;
@@ -1026,10 +1027,29 @@ i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size)
     // set TX start FIFO condition
     //sx127x_write_reg(self, REG_FIFO_THRESH, TX_START_FIFO_NOEMPTY);
     
+#if 0
+    SX127X_DBG("#0 RegIrqFlags1=0x%02X",
+	       sx127x_read_reg(self, REG_IRQ_FLAGS_1));
+    SX127X_DBG("#0 RegIrqFlags2=0x%02X",
+	       sx127x_read_reg(self, REG_IRQ_FLAGS_2));
+#endif
+    
     // wait while FIFO is no empty
+    cnt = 1000000000; // FIXME: callibrate timeout
     while ((sx127x_read_reg(self, REG_IRQ_FLAGS_2) & IRQ2_FIFO_EMPTY) == 0)
     {
       // FIXME: check timeout
+#if 0
+      SX127X_DBG("#1 RegIrqFlags1=0x%02X",
+                 sx127x_read_reg(self, REG_IRQ_FLAGS_1));
+      SX127X_DBG("#1 RegIrqFlags2=0x%02X",
+                 sx127x_read_reg(self, REG_IRQ_FLAGS_2));
+#endif
+      if (--cnt == 0)
+      {
+        SX127X_DBG("stop waiting `FifoEmpty` by timeout");
+        break; // exit by timeout
+      }
     }
 
     if (sx127x_read_reg(self, REG_PACKET_CONFIG_1) & 0x80) // `PacketFormat`
@@ -1052,7 +1072,7 @@ i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size)
     
     // start TX packet
     sx127x_tx(self);
-    
+   
     // wait `TxRaedy` (bit 5 in `RegIrqFlags1`)
     //while ((sx127x_read_reg(self, REG_IRQ_FLAGS_1) & IRQ1_TX_READY) == 0)
     //{
@@ -1060,13 +1080,26 @@ i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size)
     //}
 
     // wait `PacketSent` (bit 3 in `RegIrqFlags2`)
+    cnt = 1000000000; // FIXME: callibrate timeout
     while ((sx127x_read_reg(self, REG_IRQ_FLAGS_2) & IRQ2_PACKET_SENT) == 0)
     {
       // FIXME: check timeout
+#if 0
+      SX127X_DBG("#2 RegIrqFlags1=0x%02X",
+                 sx127x_read_reg(self, REG_IRQ_FLAGS_1));
+      SX127X_DBG("#2 RegIrqFlags2=0x%02X",
+                 sx127x_read_reg(self, REG_IRQ_FLAGS_2));
+#endif
+      if (--cnt == 0)
+      {
+        SX127X_DBG("stop waiting `PacketSent` by timeout");
+        break; // exit by timeout
+      }
     }
     
     // switch to standby mode
     sx127x_standby(self);
+    sx127x_standby(self); // FIXME: why second?
   }
 
   return SX127X_ERR_NONE;
@@ -1149,7 +1182,7 @@ void sx127x_irq_handler(sx127x_t *self)
   i16_t payload_len;
   int i;
     
-  SX127X_DBG("start sx127x_irq_handler()"); // FIXME
+  //SX127X_DBG("start sx127x_irq_handler()"); // FIXME
 
   if (self->mode == SX127X_LORA) // LoRa mode
   {
@@ -1157,9 +1190,15 @@ void sx127x_irq_handler(sx127x_t *self)
     sx127x_write_reg(self, REG_IRQ_FLAGS, irq_flags);
 
     if ((irq_flags & IRQ_RX_DONE) == 0) // check `RxDone`
+    {
+#if 1
+      SX127X_DBG("IRQ on DIO0 (LoRa): RegIrqFlags=0x%02X",
+                 irq_flags);
+#endif
       return; // `RxDone` is not set
+    }
 
-    SX127X_DBG("DIO0 interrupt in LoRa mode by `RxDone` (RegIrqFlags=0x%02X)",
+    SX127X_DBG("IRQ on DIO0 (LoRa) by `RxDone`: RegIrqFlags=0x%02X",
        	       irq_flags);
 
     // check `PayloadCrcError` bit
@@ -1176,16 +1215,25 @@ void sx127x_irq_handler(sx127x_t *self)
   }
   else // FSK/OOK mode
   {
-    u8_t irq_flags = sx127x_read_reg(self, REG_IRQ_FLAGS_2); // ~ 0x26/0x24
+    u8_t irq_flags2 = sx127x_read_reg(self, REG_IRQ_FLAGS_2); // ~ 0x26/0x24
     
-    if ((irq_flags & IRQ2_PAYLOAD_READY) == 0) // check `PayloadReady`
-      return; // `PayloadReady` is not set
+    if ((irq_flags2 & IRQ2_PAYLOAD_READY) == 0) // check `PayloadReady`
+    {
+#if 0
+      u8_t irq_flags1 = sx127x_read_reg(self, REG_IRQ_FLAGS_1);
+      SX127X_DBG("IRQ on DIO0 (FSK/OOK): "
+                 "RegIrqFlags1=0x%02X, "
+                 "RegIrqFlags2=0x%02X",
+                  irq_flags1, irq_flags2);
+#endif
+      return; // `PayloadReady` is not set in RegIrqFlags2
+    }
   
-    SX127X_DBG("DIO0 interrupt in FSK/OOK mode by `PayloadReady` "
-               "(RegIrqFlags2=0x%02X)", irq_flags);
+    SX127X_DBG("IRQ on DIO0 (FSK/OOK) by `PayloadReady`: "
+               "RegIrqFlags2=0x%02X", irq_flags2);
   
     // check `CrcOk` bit
-    crc_ok = !!(irq_flags & IRQ2_CRC_OK);
+    crc_ok = !!(irq_flags2 & IRQ2_CRC_OK);
 
     // read payload length
     if (sx127x_read_reg(self, REG_PACKET_CONFIG_1) & 0x80) // `PacketFormat`

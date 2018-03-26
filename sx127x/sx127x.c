@@ -5,6 +5,7 @@
  */
 
 //-----------------------------------------------------------------------------
+#include <stdio.h>      // NULL
 #include "sx127x.h"     // `sx127x_t`
 #include "sx127x_def.h" // SX127x define's
 //-----------------------------------------------------------------------------
@@ -260,13 +261,13 @@ i16_t sx127x_set_pars(
   else
   { // set FSK/OOK options
      sx127x_continuous(self,  false); // packet mode by default 
-     sx127x_set_bitrate(self, pars->bitrate, -1); // bit/s, no set frac
-     sx127x_set_fdev(self,    pars->fdev);        // [Hz]
-     sx127x_set_rx_bw(self,   pars->rx_bw);       // Hz
-     sx127x_set_afc_bw(self,  pars->afc_bw);      // Hz
-     sx127x_set_afc(self,     pars->afc);         // on/off
-     sx127x_set_fixed(self,   pars->fixed);       // on/off
-     sx127x_set_dcfree(self,  pars->dcfree);      // 0, 1 or 2
+     sx127x_set_bitrate(self, pars->bitrate); // bit/s
+     sx127x_set_fdev(self,    pars->fdev);    // [Hz]
+     sx127x_set_rx_bw(self,   pars->rx_bw);   // Hz
+     sx127x_set_afc_bw(self,  pars->afc_bw);  // Hz
+     sx127x_set_afc(self,     pars->afc);     // on/off
+     sx127x_set_fixed(self,   pars->fixed);   // on/off
+     sx127x_set_dcfree(self,  pars->dcfree);  // 0, 1 or 2
     
      sx127x_write_reg(self, REG_RSSI_TRESH, 0xFF); // default
      sx127x_write_reg(self, REG_PREAMBLE_LSB, 8);  // 3 by default
@@ -806,34 +807,46 @@ void sx127x_rx_calibrate(sx127x_t *self)
   }
 }
 //----------------------------------------------------------------------------
-// set bitrate (>= 500 bit/s) (FSK/OOK)
-u32_t sx127x_set_bitrate(sx127x_t *self, u32_t bitrate, i16_t frac)
+// set bitrate [bit/s] (FSK/OOK)
+// (note: must be set between 500 bit/s and 500 kbit/s)
+u32_t sx127x_set_bitrate(sx127x_t *self, u32_t bitrate)
 {
-  u32_t retv = 0;
-
   if (self->mode != SX127X_LORA) // FSK/OOK mode
   {
-    u32_t half = ((u32_t) bitrate) >> 1;
-    u32_t code = (FREQ_XTAL + half) / ((u32_t) bitrate);
-    code = SX127X_LIMIT(code, 32, 65535); // FIXME
+    u8_t frac;
+    u32_t code;
+
+    if (self->mode == SX127X_FSK)
+    { // FSK mode
+      code    = ((u32_t) (FREQ_OSC*16) + (bitrate >> 1)) / bitrate;
+      bitrate = ((u32_t) (FREQ_OSC*16) + (code >> 1))    / code;
+      frac = (u8_t) (code & 0x0F);
+      code >>= 4;
+    }
+    else
+    { // OOK mode
+      code    = ((u32_t) FREQ_OSC + (bitrate >> 1)) / bitrate;
+      bitrate = ((u32_t) FREQ_OSC + (code    >> 1)) / code;
+      frac = 0;
+    }
+
+    code = SX127X_LIMIT(code, 0x20, 0xFFFF); // 488...1000000 bit/s
     
     sx127x_write_reg(self, REG_BITRATE_MSB, (u8_t) (code >> 8));
-    sx127x_write_reg(self, REG_BITRATE_LSB, (u8_t)  code);
-    
-    if (frac > 0)
-      sx127x_write_reg(self, REG_BITRATE_FRAC, (u8_t) frac);
+    sx127x_write_reg(self, REG_BITRATE_LSB, (u8_t) code);
+    sx127x_write_reg(self, REG_BITRATE_FRAC, frac);
   
-    // FIXME: calc `frac`
-    retv = (((u32_t) FREQ_XTAL + (code >> 1)) / code);
-  
-    SX127X_DBG("set Bitrate in FSK/OOK mode to %d bit/s (code=%i)",
-               (int) retv, (int) code);
+    SX127X_DBG("set Bitrate in FSK/OOK mode to %d bit/s (code=%i, frac=%i)",
+               (int) bitrate, (int) code, (int) frac);
+
+    return bitrate;
   }
 
-  return retv;
+  return 0; // return in LoRa mode
 }
 //----------------------------------------------------------------------------
 // set frequency deviation [Hz] (FSK)
+// (note: must be set between 600 Hz and 200 kHz)
 void sx127x_set_fdev(sx127x_t *self, u32_t fdev)
 {
   if (self->mode != SX127X_LORA) // FSK/OOK mode
@@ -1144,7 +1157,7 @@ void sx127x_irq_handler(sx127x_t *self)
       return; // `PayloadReady` is not set
   
     SX127X_DBG("DIO0 interrupt in FSK/OOK mode by `PayloadReady` "
-	       "(RegIrqFlags2=0x%02X)", irq_flags);
+               "(RegIrqFlags2=0x%02X)", irq_flags);
   
     // check `CrcOk` bit
     crc_ok = !!(irq_flags & IRQ2_CRC_OK);

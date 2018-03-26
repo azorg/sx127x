@@ -175,7 +175,7 @@
 #define FIFO_RX_BASE_ADDR 0x00 
 
 // Constants
-#define FREQ_XTAL  32000000    // 32 MHz
+#define FREQ_OSC   32000000    // 32 MHz
 #define FREQ_STEP  61.03515625 // FREQ_XTAL / 2**19 [Hz]
 
 #define FREQ_MAGIC_0 31    // round(FREQ_STEP/2) [Hz]
@@ -190,7 +190,7 @@
 #define BW_TABLE {  7800, 10400,  15600,  20800,  31250, \
                    41700, 62500, 125000, 250000, 500000 }
 
-// RX BandWith table (FSK/OOK)
+// RX BandWith (mant/exp/Hz) table (FSK/OOK)
 #define RX_BW_TABLE {\
   {2, 7,   2600}, \
   {2, 7,   3100}, \

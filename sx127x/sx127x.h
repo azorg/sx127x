@@ -285,9 +285,10 @@ void sx127x_continuous(sx127x_t *self, bool on);
 void sx127x_rx_calibrate(sx127x_t *self);
 //----------------------------------------------------------------------------
 // set bitrate (>= 500 bit/s) (FSK/OOK)
-u32_t sx127x_set_bitrate(sx127x_t *self, u32_t bitrate, i16_t frac);
+u32_t sx127x_set_bitrate(sx127x_t *self, u32_t bitrate);
 //----------------------------------------------------------------------------
 // set frequency deviation [Hz] (FSK)
+// (note: must be set between 600 Hz and 200 kHz)
 void sx127x_set_fdev(sx127x_t *self, u32_t fdev);
 //----------------------------------------------------------------------------
 // set RX bandwidth [Hz] (FSK/OOK)

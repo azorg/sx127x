@@ -5,6 +5,7 @@
  */
 
 //-----------------------------------------------------------------------------
+#include <stdio.h>      // printf(), NULL
 #include <stdlib.h>     // exit(), EXIT_SUCCESS, EXIT_FAILURE
 #include <string.h>     // strlen()
 #include "spi.h"        // `spi_t`
@@ -15,10 +16,10 @@
 #include "sx127x_def.h" // SX127x define's
 //-----------------------------------------------------------------------------
 // demo mode
-#define DEMO_MODE 1 // 1 - transmitter, 2 - receiver, 3 - morse beeper
+#define DEMO_MODE 1 // 0 - transmitter, 1 - receiver, 2 - morse beeper
 
 // radio mode
-#define RADIO_MODE 0 // 0 - LoRa, 1 - FSK, 2 - OOK
+#define RADIO_MODE 2 // 0 - LoRa, 1 - FSK, 2 - OOK
 
 // timer interval
 #define TIMER_INTERVAL 1000 // ms
@@ -93,7 +94,7 @@ static void sigint_handler(void *context)
 {
   global_stop = 1;
   stimer_stop(&timer);
-  fprintf(stderr, "\nCtrl-C pressed\n");
+  printf("\nCtrl-C pressed\n");
 } 
 //-----------------------------------------------------------------------------
 // on/off DATA
@@ -147,13 +148,13 @@ static void *thread_irq_fn(void *arg)
     { // timeout
       if (global_stop)
       {
-        printf(">>> thread_irq_fn() finished by `global_stop`"); // FIXME
+        printf("\n*** thread_irq_fn() finished by `global_stop`\n\n");
         break; // finish by `global_stop`
       }
     }
     else // retv < 0
     { // error
-      printf(">>> thread_irq_fn() finished by sgpio_poll() error"); // FIXME
+      printf("\n*** thread_irq_fn() finished by sgpio_poll() error\n\n");
       global_stop = 1;
       break; // finish by sgpio_poll() error
     }
@@ -253,7 +254,7 @@ static int timer_handler(void *context)
   printf(">>> SX127x selicon revision = 0x%02X\n", (unsigned) version);
   printf(">>> RSSI = %d dBm\n", rssi); 
 
-  if (demo_mode == 1)
+  if (demo_mode == 0)
   { // transmitter
     char *str = "Hello!";
     printf(">>> sx127x_send('%s')\n", str);
@@ -261,11 +262,11 @@ static int timer_handler(void *context)
     sx127x_send(&radio, (u8_t*) str, strlen(str));
     led_on(0);
   }
-  else if (demo_mode == 2)
+  else if (demo_mode == 1)
   { // receiver
     // do nothing
   }
-  else if (demo_mode == 3)
+  else if (demo_mode == 2)
   { // morse beeper
     sx127x_tx(&radio);
     
@@ -358,7 +359,7 @@ int main()
                   SPI_SPEED); // max speed [Hz]
   printf(">>> spi_init(device='%s', speed=%d) return %d\n",
          SPI_DEVICE, SPI_SPEED, retv);
-  if (retv != 0) exit(EXIT_FAILURE);
+  // FIXME if (retv != 0) exit(EXIT_FAILURE);
 
   // creade listen IRQ threads
   vsthread_create(32, SCHED_FIFO, &thread_irq, thread_irq_fn, NULL);
@@ -371,11 +372,11 @@ int main()
   // hard reset SX127x radio module
   reset_radio();
 
-  if (demo_mode == 3)
+  if (demo_mode == 2)
     radio_mode = SX127X_OOK; // OOK in morse beeper demo
 
   // setup SX127x module
-  sx127x_init(
+  retv = sx127x_init(
       &radio,
       radio_mode,      // radio mode: 0 - LoRa, 1 - FSK, 2 - OOK
       on_spi_exchange, // SPI exchange function (return number or RX bytes)
@@ -383,6 +384,7 @@ int main()
       (const sx127x_pars_t *) NULL, // configuration parameters or NULL
       (void*) &spi,    // optional SPI exchange context
       (void*) NULL);   // optional on_receive() context
+  printf(">>> sx127x_init() return %d\n", retv);
 
   // common settings
   sx127x_set_frequency(&radio, 434000000); // RF frequency [Hz]
@@ -403,22 +405,22 @@ int main()
   }
   else
   { // FSK/OOK settings
-    sx127x_set_bitrate(&radio, 4800, -1); // bit/s, no frac
-    sx127x_set_fdev(   &radio, 5000);     // frequency deviation [Hz]
-    sx127x_set_rx_bw(  &radio, 10400);    // RX BW [Hz]
-    sx127x_set_afc_bw( &radio, 2600);     // AFC BW [Hz]
-    sx127x_set_afc(    &radio, true);     // AFC on/off
-    sx127x_set_fixed(  &radio, false);    // fixed packet size or variable
-    sx127x_set_dcfree( &radio, 0);        // 0=Off, 1=Manchester, 2=Whitening
+    sx127x_set_bitrate(&radio, 4800);  // bit/s
+    sx127x_set_fdev(   &radio, 5000);  // frequency deviation [Hz]
+    sx127x_set_rx_bw(  &radio, 10400); // RX BW [Hz]
+    sx127x_set_afc_bw( &radio, 2600);  // AFC BW [Hz]
+    sx127x_set_afc(    &radio, true);  // AFC on/off
+    sx127x_set_fixed(  &radio, false); // fixed packet size or variable
+    sx127x_set_dcfree( &radio, 0);     // 0=Off, 1=Manchester, 2=Whitening
   }
 
   // preapre to run one of demo application
-  if (demo_mode == 1)
+  if (demo_mode == 0)
   { // transmitter
     // UNSET!!! callback on receive packet (Lora/FSK/OOK)
     sx127x_on_receive(&radio, NULL, NULL); // FIXME
   }
-  else if (demo_mode == 2)
+  else if (demo_mode == 1)
   { // receiver
     // set !!!AGAIN!!! callback on receive packet (Lora/FSK/OOK)
     sx127x_on_receive(&radio, on_receive, NULL);
@@ -426,7 +428,7 @@ int main()
     // go to receive mode
     sx127x_receive(&radio, 255);
   }
-  else if (demo_mode == 3)
+  else if (demo_mode == 2)
   { // morse beeper
     data_on(0); // off OOK modulation
     sx127x_set_fast_hop(&radio, true);

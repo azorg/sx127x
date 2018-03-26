@@ -1,3 +1,6 @@
+2018.03.26: Alex Zorg <azorg(at)mail.ru>
+ * update sx127x_set_bitrate(): calculate fractional part
+
 2018.03.25: Alex Zorg <azorg(at)mail.ru>
  * fix megabug in sx127x_spi_transfer()
  * fix sx127x_set_ocp()

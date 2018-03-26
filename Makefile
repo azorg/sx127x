@@ -23,8 +23,12 @@ HDRS := \
 #SRC_DIRS := . sx127x spi stimer sgpio vsrpc
 #HDR_DIRS := .
 #----------------------------------------------------------------------------
-DEFS    := -DSPI_DEBUG -DSX127X_DEBUG -DSGPIO_DEBUG \
-           -DVSTHREAD_DEBUG -DVSTHREAD_LINUX -DVSTHREAD_LINUX_RT
+DEFS   := -DSPI_DEBUG -DSX127X_DEBUG -DSGPIO_DEBUG \
+          -DVSTHREAD_DEBUG -DVSTHREAD_LINUX -DVSTHREAD_LINUX_RT
+
+#DEFS    := -DSX127X_DEBUG \
+#           -DVSTHREAD_DEBUG -DVSTHREAD_LINUX -DVSTHREAD_LINUX_RT
+
 #OPTIM  := -g -O0
 OPTIM   := -Os
 WARN    := -Wall -Wno-pointer-to-int-cast

@@ -1,1 +1,3 @@
  * fix bug with interrupt by send in FSK/OOK packet mode
+ + add LoRa frequency hopping (`RegHoperiod`)
+

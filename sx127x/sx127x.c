@@ -27,7 +27,7 @@ sx127x_pars_t sx127x_pars_default = {
   -1,     // Low Data Rate Optimize: 1 - on, 0 - off, -1 - automatic
   0x12,   // Sync Word (allways 0x12)
   8,      // Size of preamble: 6...65535 (8 by default)
-  false,  // Implicit Header on/off
+  false,  // true - implicit header mode, false - explicit
  
   // FSK/OOK mode:
   4800,  // bitrate [bit/s] (4800 bit/s for example)
@@ -35,7 +35,7 @@ sx127x_pars_t sx127x_pars_default = {
   10400, // RX  bandwidth [Hz]: 2600...250000 kHz (10400 -> 10.4 kHz)
   2600,  // AFC bandwidth [Hz]: 2600...250000 kHz (2600  ->  2.6 kHz)
   false, // AFC on/off
-  false, // false - variable packet size, true - fixed packet size
+  false, // true - fixed packet length, false - variable length
   0      // DC free method: 0 - None, 1 - Manchester, 2 - Whitening
 };
 //-----------------------------------------------------------------------------
@@ -234,8 +234,12 @@ i16_t sx127x_set_pars(
   { // set LoRaTM options
     sx127x_set_bw(self, pars->bw); // BW [Hz]
     sx127x_set_cr(self, pars->cr); // CR
-    sx127x_impl_hdr(self, pars->impl_hdr); // "ImplicitHeaderMode"
     sx127x_set_sf(self, pars->sf); // SF
+
+    if (pars->sf <= 6)
+      sx127x_impl_hdr(self, true); // "ImplicitHeaderMode"=1
+    else
+      sx127x_impl_hdr(self, pars->impl_hdr); // "ImplicitHeaderMode"
     
     if (pars->ldro == 0)
       sx127x_set_ldro(self, false);          // LDRO off
@@ -257,6 +261,9 @@ i16_t sx127x_set_pars(
 
     // set DIO0 mapping (`RxDone`)
     sx127x_write_reg(self, REG_DIO_MAPPING_1, 0x00);
+    
+    // set maximum payload length
+    sx127x_write_reg(self, REG_MAX_PAYLOAD_LEN, MAX_PKT_LENGTH);
   }
   else
   { // set FSK/OOK options
@@ -575,9 +582,9 @@ i8_t sx127x_set_power_dbm(sx127x_t *self, i8_t dBm)
 void sx127x_set_high_power(sx127x_t *self, bool on)
 {
   if (on)
-    sx127x_write_reg(self, REG_PA_DAC, 0x87);
+    sx127x_write_reg(self, REG_PA_DAC, 0x87); // high power mode
   else
-    sx127x_write_reg(self, REG_PA_DAC, 0x84);
+    sx127x_write_reg(self, REG_PA_DAC, 0x84); // default mode
     
   SX127X_DBG("set High Power mode (+3 dB on PA_BOOST pin) to '%s'",
              on ? "On" : "Off");
@@ -606,8 +613,8 @@ void sx127x_set_ocp(sx127x_t *self, u8_t trim_mA, bool on)
   sx127x_write_reg(self, REG_OCP, (u8_t) (trim & 0xFF));
 }
 //----------------------------------------------------------------------------
-// set modulation shaping code 0..3 (FSK/OOK)
-// and set PA rise/fall time code 0..15 (FSK/Lora)
+// set PA rise/fall time of ramp code 0..15 (FSK/LoRa), default is 9
+// set modulation shaping code (0..3 in FSK, 0...2 in OOK), default is 0
 void sx127x_set_ramp(sx127x_t *self, u8_t shaping, u8_t ramp)
 {
   u8_t reg;
@@ -646,7 +653,7 @@ void sx127x_enable_crc(sx127x_t *self, bool crc, bool crcAutoClearOff)
   }
 }
 //----------------------------------------------------------------------------
-// set PLL bandwidth 0=75, 1=150, 2=225, 3=300 kHz (LoRa/FSK/OOK)
+// set PLL bandwidth 0=75, 1=150, 2=225, 3=300 kHz (LoRa/FSK/OOK), default 3
 void sx127x_set_pll_bw(sx127x_t *self, u8_t bw)
 {
   u8_t reg;
@@ -662,7 +669,7 @@ void sx127x_set_pll_bw(sx127x_t *self, u8_t bw)
                        300);
 }
 //----------------------------------------------------------------------------
-// set signal Band Width 7800-500000 Hz (LoRa)
+// set signal Bandwidth 7800...500000 Hz (LoRa)
 void sx127x_set_bw(sx127x_t *self, u32_t bw)
 {
   if (self->mode == SX127X_LORA) // LoRa mode
@@ -687,12 +694,13 @@ void sx127x_set_cr(sx127x_t *self, u8_t cr)
     reg = (reg & 0xF1) | (cr << 1);
     sx127x_write_reg(self, REG_MODEM_CONFIG_1, reg);
     
-    SX127X_DBG("set Coding Rate (CR) in LoRa mode to %d (code=%d)",
+    SX127X_DBG("set Coding Rate (CR) in LoRa mode to 4/%d (code=%d)",
                cr + 4, cr);
   }
 }
 //----------------------------------------------------------------------------
 // on/off "ImplicitHeaderMode" (LoRa)
+// (with SF=6 implicit header mode is the only mode of operation possible)
 void sx127x_impl_hdr(sx127x_t *self, bool impl_hdr)
 {
   if (self->mode == SX127X_LORA) // LoRa mode
@@ -941,6 +949,8 @@ void sx127x_set_fixed(sx127x_t *self, bool fixed)
 
     SX127X_DBG("set Fixed/Variable packet size (FSK/OOK) to '%s'",
                fixed ? "Fixed" : "Variable");
+
+    self->fixed = fixed;
   }
 }
 //----------------------------------------------------------------------------
@@ -981,26 +991,21 @@ i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size)
   int i;
   sx127x_standby(self);
 
+  // check size
+  if (size <= 0) return SX127X_ERR_BAD_SIZE;
+  size = SX127X_MIN(size, MAX_PKT_LENGTH);
+
   if (self->mode == SX127X_LORA) // LoRa mode
   {
-    i16_t current_length; 
-    sx127x_impl_hdr(self, false); // FIXME: check!
-  
-    // reset FIFO address and paload length 
+    // set FIFO base address
     sx127x_write_reg(self, REG_FIFO_ADDR_PTR, FIFO_TX_BASE_ADDR);
-    sx127x_write_reg(self, REG_PAYLOAD_LENGTH, 0);
-
-    // check size
-    current_length = (i16_t) sx127x_read_reg(self, REG_PAYLOAD_LENGTH);
-    size = SX127X_MIN(size, (MAX_PKT_LENGTH - FIFO_TX_BASE_ADDR -
-                             current_length));
 
     // write data to FIFO
     for (i = 0; i < size; i++)
       sx127x_write_reg(self, REG_FIFO, data[i]);
 
-    // update length
-    sx127x_write_reg(self, REG_PAYLOAD_LENGTH, (u8_t)(current_length + size));
+    // set payload length
+    sx127x_write_reg(self, REG_PAYLOAD_LENGTH, (u8_t) size);
 
     // start TX packet
     sx127x_tx(self);
@@ -1017,7 +1022,6 @@ i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size)
   else // FSK/OOK mode
   {
     //u8_t add;
-    size = SX127X_MIN(size, 256); // limit size FIXME
 
     // set TX start FIFO condition
     //sx127x_write_reg(self, REG_FIFO_THRESH, TX_START_FIFO_NOEMPTY);
@@ -1065,26 +1069,47 @@ i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size)
     sx127x_standby(self);
   }
 
-  return SX127X_ERR_NONE; // FIXME
+  return SX127X_ERR_NONE;
 }
 //----------------------------------------------------------------------------
 // go to RX mode; wait callback by interrupt (LoRa/FSK/OOK)
+// LoRa:    if pkt_len = 0 then explicit header mode, else - implicit
+// FSK/OOK: if pkt_len = 0 then variable packet length, else - fixed
 void sx127x_receive(sx127x_t *self, i16_t pkt_len)
 {
+  pkt_len = SX127X_MIN(pkt_len, MAX_PKT_LENGTH);
+
   if (self->mode == SX127X_LORA) // LoRa mode
   {
     if (pkt_len > 0)
-    {
-      sx127x_impl_hdr(self, true); // FIXME: check!
+    { // Implicit Header Mode
+      if (!self->impl_hdr)
+        sx127x_impl_hdr(self, true);
+      
       sx127x_write_reg(self, REG_PAYLOAD_LENGTH, (u8_t) pkt_len);
+    }
+    else
+    { // Explicit Header mode
+      if (self->impl_hdr)
+        sx127x_impl_hdr(self, false);
     }
   }
   else // FSK/OOK mode
   {
-    if ((sx127x_read_reg(self, REG_PACKET_CONFIG_1) & 0x80) == 0)
-      // `PacketFormat`=1 => fixed length
-      sx127x_write_reg(self, REG_PAYLOAD_LEN, (u8_t) SX127X_MAX(pkt_len, 1));
+    if (pkt_len > 0)
+    { // fixed packet length
+      if (!self->fixed)
+        sx127x_set_fixed(self, true);
+      
+      sx127x_write_reg(self, REG_PAYLOAD_LEN, (u8_t) pkt_len);
+    }
+    else
+    { // variable packet length
+      if (self->fixed)
+        sx127x_set_fixed(self, false);
+    }
   }
+
   sx127x_rx(self);
 }
 //----------------------------------------------------------------------------
@@ -1142,12 +1167,12 @@ void sx127x_irq_handler(sx127x_t *self)
 
     // set FIFO address to current RX address
     sx127x_write_reg(self, REG_FIFO_ADDR_PTR,
-	             sx127x_read_reg(self, REG_FIFO_RX_CURRENT_ADDR));
+                     sx127x_read_reg(self, REG_FIFO_RX_CURRENT_ADDR));
 
     // read payload length
     payload_len = self->impl_hdr ?
-                 sx127x_read_reg(self, REG_PAYLOAD_LENGTH) :
-		 sx127x_read_reg(self, REG_RX_NB_BYTES);
+                  sx127x_read_reg(self, REG_PAYLOAD_LENGTH) :
+                  sx127x_read_reg(self, REG_RX_NB_BYTES);
   }
   else // FSK/OOK mode
   {

@@ -288,6 +288,8 @@ static int timer_handler(void *context)
 int main()
 {
   int retv, radio_mode = RADIO_MODE;
+  u8_t reg;
+  u32_t freq;
  
   // set "real-time" priority
   if (1)
@@ -413,6 +415,14 @@ int main()
     sx127x_set_fixed(  &radio, false); // fixed packet size or variable
     sx127x_set_dcfree( &radio, 0);     // 0=Off, 1=Manchester, 2=Whitening
   }
+
+  // get RF frequency [Hz]
+  freq = sx127x_get_frequency(&radio);
+  printf(">>> sx127x_get_frequency() return %lu Hz\n", freq);
+
+  // get current RX gain code [1..6] from `RegLna` (1 - maximum gain)
+  reg = sx127x_get_rx_gain(&radio);
+  printf(">>> sx127x_get_rx_gain() return %d\n", (int) reg);
 
   // preapre to run one of demo application
   if (demo_mode == 0)

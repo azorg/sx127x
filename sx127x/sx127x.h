@@ -16,9 +16,9 @@
 #define SX127X_MAX(x, y) ((x) > (y) ? (x) : (y))
 //-----------------------------------------------------------------------------
 // common error codes (return values)
-#define SX127X_ERR_NONE     0 // no error, success
-#define SX127X_ERR_VERSION -1 // error of crystal revision
-//...
+#define SX127X_ERR_NONE      0 // no error, success
+#define SX127X_ERR_VERSION  -1 // error of crystal revision
+#define SX127X_ERR_BAD_SIZE -2 // bad size of send packet (<=0)
 
 //----------------------------------------------------------------------------
 #ifdef SX127X_DEBUG
@@ -66,10 +66,9 @@ typedef struct sx127x_pars_ {
   i8_t  ldro;       // Low Data Rate Optimize: 1 - on, 0 - off, -1 - automatic
   u8_t  sw;         // Sync Word (allways 0x12)
   u16_t preamble;   // Size of preamble: 6...65535 (8 by default)
-  bool  impl_hdr;   // Implicit Header on/off
-   //bool rx_single;  // `RsSinleOn`
-   //bool freq_hop;   // `FreqHopOn`
-   //u8_t hop_period; // `HopPeriod`                 
+  bool impl_hdr;    // true - implicit header mode, false - explicit
+  //bool freq_hop;    // `FreqHopOn`
+  //u8_t hop_period;  // `HopPeriod`                 
  
   // FSK/OOK mode pars:
   u32_t bitrate; // bitrate [bit/s] (4800 bit/s for example)
@@ -77,9 +76,8 @@ typedef struct sx127x_pars_ {
   u32_t rx_bw;   // RX  bandwidth [Hz]: 2600...250000 kHz (10400 -> 10.4 kHz)
   u32_t afc_bw;  // AFC bandwidth [Hz]: 2600...250000 kHz (2600  ->  2.6 kHz)
   bool  afc;     // AFC on/off
-  bool  fixed;   // false - variable packet size, true - fixed packet size
+  bool  fixed;   // true - fixed packet length, false - variable length
   u8_t  dcfree;  // DC free method: 0 - None, 1 - Manchester, 2 - Whitening
-
 } sx127x_pars_t;
 //----------------------------------------------------------------------------
 // SX127x class pivate data
@@ -88,8 +86,9 @@ struct sx127x_ {
   sx127x_mode_t mode; // radio mode: SX127X_LORA, SX127X_FSK, SX127X_OOK
   u32_t freq;         // frequency [Hz] (434000000 -> 434 MHz)
   bool pa_boost;      // true - use PA_BOOT out pin, false - use RFO out pin
-  bool crc;           // CRC in packet modes false - off, true - on
-  bool impl_hdr;      // Implicit Header Mode on/off
+  bool crc;           // CRC in packet modes: false - off, true - on
+  bool impl_hdr;      // true - implicit header mode, false - explicit
+  bool fixed;         // true - fixed packet length, false - variable length
   
   int (*spi_exchange)( // SPI exchange function
     u8_t       *rx_buf, // RX buffer
@@ -244,23 +243,24 @@ void sx127x_set_high_power(sx127x_t *self, bool on);
 // (note: you must set OCP trmimmer if set high power, look datasheet)
 void sx127x_set_ocp(sx127x_t *self, u8_t trim_mA, bool on);
 //----------------------------------------------------------------------------
-// set modulation shaping code 0..3 (FSK/OOK)
-// and set PA rise/fall time code 0..15 (FSK/Lora)
+// set PA rise/fall time of ramp code 0..15 (FSK/LoRa), default is 9
+// set modulation shaping code (0..3 in FSK, 0...2 in OOK), default is 0
 void sx127x_set_ramp(sx127x_t *self, u8_t shaping, u8_t ramp);
 //----------------------------------------------------------------------------
 // enable/disable CRC, set/unset `CrcAutoClearOff` in FSK/OOK mode
 void sx127x_enable_crc(sx127x_t *self, bool crc, bool crcAutoClearOff);
 //----------------------------------------------------------------------------
-// set PLL bandwidth 0=75, 1=150, 2=225, 3=300 kHz (LoRa/FSK/OOK)
+// set PLL bandwidth 0=75, 1=150, 2=225, 3=300 kHz (LoRa/FSK/OOK), default 3
 void sx127x_set_pll_bw(sx127x_t *self, u8_t bw);
 //----------------------------------------------------------------------------
-// set signal Band Width 7800-500000 Hz (LoRa)
+// set signal Bandwidth 7800...500000 Hz (LoRa)
 void sx127x_set_bw(sx127x_t *self, u32_t bw);
 //----------------------------------------------------------------------------
 // set Coding Rate 5...8 (LoRa)
 void sx127x_set_cr(sx127x_t *self, u8_t cr);
 //----------------------------------------------------------------------------
 // on/off "ImplicitHeaderMode" (LoRa)
+// (with SF=6 implicit header mode is the only mode of operation possible)
 void sx127x_impl_hdr(sx127x_t *self, bool impl_hdr);
 //----------------------------------------------------------------------------
 // set Spreading Factor 6...12 (LoRa)
@@ -313,6 +313,8 @@ void sx127x_set_fast_hop(sx127x_t *self, bool on);
 i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size);
 //----------------------------------------------------------------------------
 // go to RX mode; wait callback by interrupt (LoRa/FSK/OOK)
+// LoRa:    if pkt_len = 0 then explicit header mode, else - implicit
+// FSK/OOK: if pkt_len = 0 then variable packet length, else - fixed
 void sx127x_receive(sx127x_t *self, i16_t pkt_len);
 //----------------------------------------------------------------------------
 // enable/disable interrupt by RX done for debug (LoRa)

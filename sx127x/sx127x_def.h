@@ -99,18 +99,19 @@
 #define REG_FIFO_RX_CURRENT_ADDR 0x10 // Start address of last packet received
 #define REG_FIFO_RX_BYTE_ADDR    0x25 // Address of last byte written in FIFO
 
-#define REG_IRQ_FLAGS_MASK 0x11 // Optional IRQ flag mask
-#define REG_IRQ_FLAGS      0x12 // IRQ flags
-#define REG_RX_NB_BYTES    0x13 // Number of received bytes
-#define REG_PKT_RSSI_VALUE 0x1A // RSSI of last packet
-#define REG_PKT_SNR_VALUE  0x1B // Current RSSI
-#define REG_MODEM_CONFIG_1 0x1D // Modem PHY config 1
-#define REG_MODEM_CONFIG_2 0x1E // Modem PHY config 2
-#define REG_PREAMBLE_MSB   0x20 // Size of preamble (MSB)
-#define REG_PREAMBLE_LSB   0x21 // Size of preamble (LSB)
-#define REG_PAYLOAD_LENGTH 0x22 // LoRa TM payload length
-#define REG_MODEM_CONFIG_3 0x26 // Modem PHY config 3
-#define REG_RSSI_WIDEBAND  0x2C // Wideband RSSI meas-urement
+#define REG_IRQ_FLAGS_MASK  0x11 // Optional IRQ flag mask
+#define REG_IRQ_FLAGS       0x12 // IRQ flags
+#define REG_RX_NB_BYTES     0x13 // Number of received bytes
+#define REG_PKT_RSSI_VALUE  0x1A // RSSI of last packet
+#define REG_PKT_SNR_VALUE   0x1B // Current RSSI
+#define REG_MODEM_CONFIG_1  0x1D // Modem PHY config 1
+#define REG_MODEM_CONFIG_2  0x1E // Modem PHY config 2
+#define REG_PREAMBLE_MSB    0x20 // Size of preamble (MSB)
+#define REG_PREAMBLE_LSB    0x21 // Size of preamble (LSB)
+#define REG_PAYLOAD_LENGTH  0x22 // LoRa TM payload length
+#define REG_MAX_PAYLOAD_LEN 0x23 // LoRa maximum payload length
+#define REG_MODEM_CONFIG_3  0x26 // Modem PHY config 3
+#define REG_RSSI_WIDEBAND   0x2C // Wideband RSSI meas-urement
 
 #define REG_DETECT_OPTIMIZE     0x31 // LoRa detection Optimize for SF=6
 #define REG_INVERT_IQ           0x33 // Invert LoRa I and Q signals
@@ -175,8 +176,8 @@
 #define FIFO_RX_BASE_ADDR 0x00 
 
 // Constants
-#define FREQ_OSC   32000000    // 32 MHz
-#define FREQ_STEP  61.03515625 // FREQ_OSC / 2**19 [Hz]
+#define FREQ_OSC  32000000    // 32 MHz
+#define FREQ_STEP 61.03515625 // FREQ_OSC / 2**19 [Hz]
 
 #define FREQ_MAGIC_1 8     // arithmetic shift
 #define FREQ_MAGIC_2 625   // 5**4

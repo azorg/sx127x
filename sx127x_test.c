@@ -16,10 +16,10 @@
 #include "sx127x_def.h" // SX127x define's
 //-----------------------------------------------------------------------------
 // demo mode
-#define DEMO_MODE 0 // 0 - transmitter, 1 - receiver, 2 - morse beeper
+#define DEMO_MODE 1 // 0 - transmitter, 1 - receiver, 2 - morse beeper
 
 // radio mode
-#define RADIO_MODE 0 // 0 - LoRa, 1 - FSK, 2 - OOK
+#define RADIO_MODE 1 // 0 - LoRa, 1 - FSK, 2 - OOK
 
 // timer interval
 #define TIMER_INTERVAL 1000 // ms
@@ -234,12 +234,16 @@ void on_receive(
   int16_t snr  = sx127x_get_snr(&radio);
   
   blink_led();
-  printf("*** Received message: ***\n");
+  printf("*** Received message:\n");
 
   for (i = 0; i < payload_size; i++)
-    printf("%02X", payload[i]);
+#if 1
+    printf("%c", (char) payload[i]);
+#else
+    printf("%02X ", payload[i]);
+#endif
 
-  printf("\n^^^ crcOk=%s, size=%i, RSSI=%d, SNR=%d ^^^\n",
+  printf("\n^^^ CrcOk=%s, size=%i, RSSI=%d, SNR=%d\n",
         crc ? "true" : "false", payload_size, rssi, snr);
 
 }
@@ -397,6 +401,7 @@ int main()
     sx127x_set_ldro(    &radio, false);  // Low Datarate Optimize
     sx127x_set_preamble(&radio, 6);      // 6..65535 (8 by default)
     sx127x_set_sw(      &radio, 0x12);   // SW allways 0x12
+    sx127x_impl_hdr(    &radio, false);  // explicit header
   }
   else
   { // FSK/OOK settings
@@ -432,7 +437,7 @@ int main()
     sx127x_on_receive(&radio, on_receive, NULL);
 
     // go to receive mode
-    sx127x_receive(&radio, 255);
+    sx127x_receive(&radio, 0);
   }
   else if (demo_mode == 2)
   { // morse beeper

@@ -1052,15 +1052,15 @@ i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size)
       }
     }
 
-    if (sx127x_read_reg(self, REG_PACKET_CONFIG_1) & 0x80) // `PacketFormat`
-    {
-      sx127x_write_reg(self, REG_FIFO, size); // variable length
-      //add = 1;
+    if (self->fixed)
+    { // fixed packet length
+      sx127x_write_reg(self, REG_PAYLOAD_LEN, size);
+      //add = 0;
     }
     else
-    {
-      sx127x_write_reg(self, REG_PAYLOAD_LEN, size); // fixed length
-      //add = 0;
+    { // variable packet length
+      sx127x_write_reg(self, REG_FIFO, size);
+      //add = 1;
     }
     
     // set TX start FIFO condition
@@ -1219,7 +1219,7 @@ void sx127x_irq_handler(sx127x_t *self)
     
     if ((irq_flags2 & IRQ2_PAYLOAD_READY) == 0) // check `PayloadReady`
     {
-#if 0
+#if 1
       u8_t irq_flags1 = sx127x_read_reg(self, REG_IRQ_FLAGS_1);
       SX127X_DBG("IRQ on DIO0 (FSK/OOK): "
                  "RegIrqFlags1=0x%02X, "

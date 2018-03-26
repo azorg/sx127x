@@ -176,9 +176,8 @@
 
 // Constants
 #define FREQ_OSC   32000000    // 32 MHz
-#define FREQ_STEP  61.03515625 // FREQ_XTAL / 2**19 [Hz]
+#define FREQ_STEP  61.03515625 // FREQ_OSC / 2**19 [Hz]
 
-#define FREQ_MAGIC_0 31    // round(FREQ_STEP/2) [Hz]
 #define FREQ_MAGIC_1 8     // arithmetic shift
 #define FREQ_MAGIC_2 625   // 5**4
 #define FREQ_MAGIC_3 25    // 5**2
@@ -193,7 +192,7 @@
 // RX BandWith (mant/exp/Hz) table (FSK/OOK)
 #define RX_BW_TABLE {\
   {2, 7,   2600}, \
-  {2, 7,   3100}, \
+  {1, 7,   3100}, \
   {0, 7,   3900}, \
   {2, 6,   5200}, \
   {1, 6,   6300}, \

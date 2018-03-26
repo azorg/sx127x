@@ -1115,31 +1115,26 @@ void sx127x_receive(sx127x_t *self, i16_t pkt_len)
   if (self->mode == SX127X_LORA) // LoRa mode
   {
     if (pkt_len > 0)
-    { // Implicit Header Mode
-      if (!self->impl_hdr)
-        sx127x_impl_hdr(self, true);
-      
+    { // implicit header mode
+      if (!self->impl_hdr) sx127x_impl_hdr(self, true);
       sx127x_write_reg(self, REG_PAYLOAD_LENGTH, (u8_t) pkt_len);
     }
     else
-    { // Explicit Header mode
-      if (self->impl_hdr)
-        sx127x_impl_hdr(self, false);
+    { // explicit header mode
+      if (self->impl_hdr) sx127x_impl_hdr(self, false);
     }
   }
   else // FSK/OOK mode
   {
     if (pkt_len > 0)
     { // fixed packet length
-      if (!self->fixed)
-        sx127x_set_fixed(self, true);
-      
+      if (!self->fixed) sx127x_set_fixed(self, true);
       sx127x_write_reg(self, REG_PAYLOAD_LEN, (u8_t) pkt_len);
     }
     else
     { // variable packet length
-      if (self->fixed)
-        sx127x_set_fixed(self, false);
+      if (self->fixed) sx127x_set_fixed(self, false);
+      sx127x_write_reg(self, REG_PAYLOAD_LEN, MAX_PKT_LENGTH);
     }
   }
 

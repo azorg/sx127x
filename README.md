@@ -2,17 +2,17 @@ Connect Ra-01/Ra-02 module base on LoRaTM SX127x chip to Orange Pi
 ==================================================================
 
 ### Notes
-0. THIS CODE IS DO NOW WORK YET! WORK IN PROCESS.
+0. THIS CODE IS DON'T WORK YET! WORK IN PROGRESS
 1. This is experimental example, not software product ready for use
 2. This this free and open source software
 3. Author: Alex Zorg azorg(at)mail.ru
 4. Licenced by GPLv3
-5. Tested on Orange Pi Zero (Pi One and Pi Win Plus in plans)
+5. Tested on Orange Pi Zero
 6. Sources based on:
-  * https://github.com/azorg/sx127x_esp
-  * https://github.com/azorg/spi
-  * https://github.com/azorg/sgpio
-  * https://github.com/azorg/vsrpc
+ * https://github.com/azorg/sx127x_esp
+ * https://github.com/azorg/spi
+ * https://github.com/azorg/sgpio
+ * https://github.com/azorg/vsrpc
 
 ## Orange Pi Zero 26 pin connector
 
@@ -32,39 +32,43 @@ Connect Ra-01/Ra-02 module base on LoRaTM SX127x chip to Orange Pi
  |  14  |   SCLK | 23 | 24 | CE0     | 13   |
  |      |     0V | 25 | 26 | GPIO.11 | 10   |
 
-## Orange Pi Win Plus 40 pin connector
-...
+## Connect LoRa SX1278 module to Orange Pi Zero
 
-## Orange Pi One 40 pin connector
-...
+| GPIO | Pi Zero | Signal  | SX1278 (color)  |
+|:----:|:-------:|:------- |:--------------- |
+|   6  |    7    | IRQ     | DIO0  (yellow)  |
+|   7  |   12    | RESET   | RESET (magenta) |
+|  15  |   19    | MOSI    | MOSI  (green)   |
+|  16  |   21    | MISO    | MISO  (blue)    |
+|  14  |   23    | SCK     | SCK   (white)   |
+|  13  |   24    | CS      | NSS   (grey)    |
+|  19  |   16    | DATA *  | DIO2  (brown)   |
+|  -   |   -     | DCLK ** | DIO1  (orange)  |
+|  18  |   18    | LED     | -               |
+|  -   | 1 or 17 | 3.3V    | 3.3V  (red)     |
+|  -   | 25,20,  | GND     | GND   (black)   |
+|  -   | 14,9,6  | GND     | -               |
 
-## Raspbery Pi B+ 40 pin connector
-...
+Notes:
 
-## Connect LoRa SX1278 module to you Orange Pi (Zero, Win Plus or One)
+- (*) DIO2(DATA) is optional and may used in continuous FSK/OOK mode
 
-| GPIO | Pi Zero | Pi Win+ | Pi One  | Signal  | SX1278 (color)  |
-|:----:|:-------:|:-------:|:-------:|:------- |:--------------- |
-|   6  |    7    |    ?    |    ?    | IRQ     | DIO0  (yellow)  |
-|   7  |   12    |    ?    |    ?    | RESET   | RESET (magenta) |
-|  15  |   19    |    ?    |    ?    | MOSI    | MOSI  (green)   |
-|  16  |   21    |    ?    |    ?    | MISO    | MISO  (blue)    |
-|  14  |   23    |    ?    |    ?    | SCK     | SCK   (white)   |
-|  13  |   24    |    ?    |    ?    | CS      | NSS   (grey)    |
-|  19  |   16    |    ?    |    ?    | DATA *  | DIO2  (brown)   |
-|  -   |   -     |    ?    |    ?    | DCLK ** | DIO1  (orange)  |
-|  18  |   18    |    ?    |    ?    | LED     | -               |
-|  -   | 1 or 17 |    ?    |    ?    | 3.3V    | 3.3V  (red)     |
-|  -   | 25,20,  |    ?    |    ?    | GND     | GND   (black)   |
-|  -   | 14,9,6  |    ?    |    ?    | GND     | -               |
+- (**) DIO1(DCLK) unused in this project
 
-Note (*):  DIO2(DATA) is optional and may used in continuous FSK/OOK mode
-
-Note (**): DIO1(DCLK) unused
+- set GPIO_* and SPI_DEVICE define's in "sx127x_test.c" for your hardware
 
 ## Build test application
 
+* edit "sx127x_test.c" module (select modes)
+
+* build:
+
 ```
 $ make
+```
+
+* run:
+```
+$ ./sx127x_test
 ```
 

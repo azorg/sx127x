@@ -227,8 +227,8 @@ i16_t sx127x_set_pars(
   else
     sx127x_set_ocp(self, 120, false);
 
-  // enable/disable CRC (`CrcAutoClearOff`=0)
-  sx127x_enable_crc(self, pars->crc, false);
+  // enable/disable CRC (`CrcAutoClearOff`=1)
+  sx127x_enable_crc(self, pars->crc, true);
 
   if (self->mode == SX127X_LORA)
   { // set LoRaTM options

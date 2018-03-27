@@ -16,13 +16,16 @@
 #include "sx127x_def.h" // SX127x define's
 //-----------------------------------------------------------------------------
 // demo mode
-#define DEMO_MODE 0 // 0 - transmitter, 1 - receiver, 2 - morse beeper
+#define DEMO_MODE 1 // 0 - transmitter, 1 - receiver, 2 - morse beeper
 
 // radio mode
 #define RADIO_MODE 0 // 0 - LoRa, 1 - FSK, 2 - OOK
 
 // timer interval
 #define TIMER_INTERVAL 1000 // ms
+
+// implicit header (LoRa) or fixed packet length (FSK/OOK)
+//#define FIXED
 
 //-----------------------------------------------------------------------------
 #define ORANGE_PI_ZERO
@@ -259,7 +262,13 @@ static int timer_handler(void *context)
     char *str = "Hello!";
     printf(">>> sx127x_send('%s')\n", str);
     led_on(1);
-    sx127x_send(&radio, (u8_t*) str, strlen(str), true);
+#ifdef FIXED
+    sx127x_send(&radio,
+                (u8_t*) str, strlen(str), true); // implicit header / fixed
+#else
+    sx127x_send(&radio,
+                (u8_t*) str, strlen(str), false); // explicit header / varible
+#endif
     led_on(0);
   }
   else if (demo_mode == 1)
@@ -440,7 +449,11 @@ int main()
     sx127x_on_receive(&radio, on_receive, NULL);
 
     // go to receive mode
-    sx127x_receive(&radio, 6); //!!!
+#ifdef FIXED
+    sx127x_receive(&radio, 6); // 6=size("Hello!")
+#else
+    sx127x_receive(&radio, 0); // explicit header or variable packet length
+#endif
   }
   else if (demo_mode == 2)
   { // morse beeper

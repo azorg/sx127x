@@ -19,7 +19,7 @@
 #define DEMO_MODE 0 // 0 - transmitter, 1 - receiver, 2 - morse beeper
 
 // radio mode
-#define RADIO_MODE 1 // 0 - LoRa, 1 - FSK, 2 - OOK
+#define RADIO_MODE 0 // 0 - LoRa, 1 - FSK, 2 - OOK
 
 // timer interval
 #define TIMER_INTERVAL 1000 // ms
@@ -259,7 +259,7 @@ static int timer_handler(void *context)
     char *str = "Hello!";
     printf(">>> sx127x_send('%s')\n", str);
     led_on(1);
-    sx127x_send(&radio, (u8_t*) str, strlen(str));
+    sx127x_send(&radio, (u8_t*) str, strlen(str), true);
     led_on(0);
   }
   else if (demo_mode == 1)
@@ -440,7 +440,7 @@ int main()
     sx127x_on_receive(&radio, on_receive, NULL);
 
     // go to receive mode
-    sx127x_receive(&radio, 0);
+    sx127x_receive(&radio, 6); //!!!
   }
   else if (demo_mode == 2)
   { // morse beeper

@@ -986,7 +986,8 @@ void sx127x_set_fast_hop(sx127x_t *self, bool on)
 }
 //----------------------------------------------------------------------------
 // send packet (LoRa/FSK/OOK)
-i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size)
+// fixed - implicit header mode (LoRa), fixed packet length (FSK/OOK)
+i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size, bool fixed)
 {
   int i;
   sx127x_standby(self);
@@ -998,6 +999,10 @@ i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size)
 
   if (self->mode == SX127X_LORA) // LoRa mode
   {
+    // set implicit or explicit header mode
+    if (self->impl_hdr != fixed)
+      sx127x_impl_hdr(self, fixed);
+
     // set FIFO base address
     sx127x_write_reg(self, REG_FIFO_ADDR_PTR, FIFO_TX_BASE_ADDR);
 
@@ -1023,6 +1028,10 @@ i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size)
   else // FSK/OOK mode
   {
     //u8_t add;
+    
+    // set fixed or variable packet length
+    if (self->fixed != fixed)
+      sx127x_set_fixed(self, fixed);
 
     // set TX start FIFO condition
     //sx127x_write_reg(self, REG_FIFO_THRESH, TX_START_FIFO_NOEMPTY);
@@ -1186,7 +1195,7 @@ void sx127x_irq_handler(sx127x_t *self)
 
     if ((irq_flags & IRQ_RX_DONE) == 0) // check `RxDone`
     {
-#if 1
+#if 0
       SX127X_DBG("IRQ on DIO0 (LoRa): RegIrqFlags=0x%02X",
                  irq_flags);
 #endif
@@ -1214,7 +1223,7 @@ void sx127x_irq_handler(sx127x_t *self)
     
     if ((irq_flags2 & IRQ2_PAYLOAD_READY) == 0) // check `PayloadReady`
     {
-#if 1
+#if 0
       u8_t irq_flags1 = sx127x_read_reg(self, REG_IRQ_FLAGS_1);
       SX127X_DBG("IRQ on DIO0 (FSK/OOK): "
                  "RegIrqFlags1=0x%02X, "

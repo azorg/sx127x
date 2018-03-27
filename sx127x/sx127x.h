@@ -310,7 +310,8 @@ void sx127x_set_dcfree(sx127x_t *self, u8_t dcfree);
 void sx127x_set_fast_hop(sx127x_t *self, bool on);
 //----------------------------------------------------------------------------
 // send packet (LoRa/FSK/OOK)
-i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size);
+// fixed - implicit header mode (LoRa), fixed packet length (FSK/OOK)
+i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size, bool fixed);
 //----------------------------------------------------------------------------
 // go to RX mode; wait callback by interrupt (LoRa/FSK/OOK)
 // LoRa:    if pkt_len = 0 then explicit header mode, else - implicit

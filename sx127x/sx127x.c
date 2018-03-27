@@ -17,8 +17,8 @@ sx127x_pars_t sx127x_pars_default = {
   7,         // `MaxPower` parametr 0...7 (7 by default)
   true,      // true - use PA_BOOT out pin, false - use RFO out pin
   false,     // if true then add +3 dB to power on PA_BOOST output pin
-  220,       // OCP trimmer [mA] (0 <=> OCP off)
-  false,     // CRC in packet modes false - off, true - on
+  200,       // OCP trimmer [mA] (0 <=> OCP off)
+  true,      // CRC in packet modes false - off, true - on
 
   // LoRaTM mode:
   125000, // Bandwith [Hz]: 7800...500000 (125000 -> 125 kHz)
@@ -34,7 +34,7 @@ sx127x_pars_t sx127x_pars_default = {
   5000,  // frequency deviation [Hz] (5000 Hz for example)
   10400, // RX  bandwidth [Hz]: 2600...250000 kHz (10400 -> 10.4 kHz)
   2600,  // AFC bandwidth [Hz]: 2600...250000 kHz (2600  ->  2.6 kHz)
-  false, // AFC on/off
+  true,  // AFC on/off
   false, // true - fixed packet length, false - variable length
   0      // DC free method: 0 - None, 1 - Manchester, 2 - Whitening
 };
@@ -639,7 +639,7 @@ void sx127x_enable_crc(sx127x_t *self, bool crc, bool crcAutoClearOff)
     reg = crc ? (reg | 0x04) : (reg & ~0x04); // `RxPayloadCrcOn`
     sx127x_write_reg(self, REG_MODEM_CONFIG_2, reg);
     
-    SX127X_DBG("set CrcOn to '%s'", crc ? "On" : "Off");
+    SX127X_DBG("set CrcOn=%d (LoRa)", (int) !!crc);
   }
   else // FSK/OOK mode
   {
@@ -648,8 +648,8 @@ void sx127x_enable_crc(sx127x_t *self, bool crc, bool crcAutoClearOff)
     if (crcAutoClearOff) reg |= 0x08; // `CrcAutoClearOff`
     sx127x_write_reg(self, REG_PACKET_CONFIG_1, reg);
 
-    SX127X_DBG("set CrcOn to '%s'; CrcAutoClearOff=%d",
-               crc ? "On" : "Off", !!crcAutoClearOff);
+    SX127X_DBG("set CrcOn=%d; CrcAutoClearOff=%d (FSK/OOK)",
+               (int) !!crc, (int) !!crcAutoClearOff);
   }
 }
 //----------------------------------------------------------------------------
@@ -943,8 +943,8 @@ void sx127x_set_fixed(sx127x_t *self, bool fixed)
   if (self->mode != SX127X_LORA) // FSK/OOK mode
   {
     u8_t reg = sx127x_read_reg(self, REG_PACKET_CONFIG_1);
-    if (fixed) reg |=  0x80; // bit 7: PacketFormar -> 0 (fixed size)
-    else       reg &= ~0x80; // bit 7: PacketFormat -> 1 (variable size)
+    if (fixed) reg &= ~0x80; // bit 7: PacketFormar -> 0 (fixed size)
+    else       reg |=  0x80; // bit 7: PacketFormat -> 1 (variable size)
     sx127x_write_reg(self, REG_PACKET_CONFIG_1, reg);
 
     SX127X_DBG("set Fixed/Variable packet size (FSK/OOK) to '%s'",
@@ -1246,6 +1246,14 @@ void sx127x_irq_handler(sx127x_t *self)
     self->on_receive(self, self->payload, payload_len,
                      self->crc ? crc_ok : true,
                      self->on_receive_context);
+}
+//----------------------------------------------------------------------------
+// dump registers for debug
+void sx127x_dump(sx127x_t *self)
+{
+  int i;
+  for (i = 0; i < 128; i++)
+    SX127X_DBG("Reg[0x%02X] = 0x%02X", i, (int) sx127x_read_reg(self, i));
 }
 //----------------------------------------------------------------------------
 

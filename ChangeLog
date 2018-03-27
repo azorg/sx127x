@@ -1,3 +1,7 @@
+2018.03.27: Alex Zorg <azorg(at)mail.ru>
+ + add sx127x_dump()
+ * fix bug in sx127x_set_fixed()
+
 2018.03.26: Alex Zorg <azorg(at)mail.ru>
  * update sx127x_set_bitrate(): calculate fractional part
  * fix error in MODE_OOK constant

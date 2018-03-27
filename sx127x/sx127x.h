@@ -326,6 +326,9 @@ u16_t sx127x_get_irq_flags(sx127x_t *self);
 // IRQ handler on DIO0 pin
 void sx127x_irq_handler(sx127x_t *self);
 //----------------------------------------------------------------------------
+// dump registers for debug
+void sx127x_dump(sx127x_t *self);
+//----------------------------------------------------------------------------
 #ifdef __cplusplus
 }
 #endif // __cplusplus

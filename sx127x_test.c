@@ -16,7 +16,7 @@
 #include "sx127x_def.h" // SX127x define's
 //-----------------------------------------------------------------------------
 // demo mode
-#define DEMO_MODE 1 // 0 - transmitter, 1 - receiver, 2 - morse beeper
+#define DEMO_MODE 0 // 0 - transmitter, 1 - receiver, 2 - morse beeper
 
 // radio mode
 #define RADIO_MODE 1 // 0 - LoRa, 1 - FSK, 2 - OOK
@@ -390,8 +390,8 @@ int main()
   sx127x_set_power_dbm(&radio, 10);        // power [dBm]
   sx127x_set_high_power(&radio, false);    // add +3 dB on PA_BOOST pin
   sx127x_set_ocp(&radio, 120, true);       // set OCP trimming [mA]
-  sx127x_enable_crc(&radio, true, false);  // CRC=on, CrcAutoClearOff=0
-  sx127x_set_pll_bw(&radio, 1);            // 0=75, 1=150, 2=225, 3=300 kHz
+  sx127x_enable_crc(&radio, true, true);   // CRC, CrcAutoClearOff
+  sx127x_set_pll_bw(&radio, 2);            // 0=75, 1=150, 2=225, 3=300 kHz
 
   if (sx127x_is_lora(&radio))
   { // LoRa settings
@@ -421,6 +421,9 @@ int main()
   // get current RX gain code [1..6] from `RegLna` (1 - maximum gain)
   reg = sx127x_get_rx_gain(&radio);
   printf(">>> sx127x_get_rx_gain() return %d\n", (int) reg);
+
+  // dump registers
+  sx127x_dump(&radio);
 
   // creade listen IRQ threads
   vsthread_create(32, SCHED_FIFO, &thread_irq, thread_irq_fn, NULL);

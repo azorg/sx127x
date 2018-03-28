@@ -149,32 +149,23 @@ void sx127x_on_receive(
   self->on_receive         = on_receive;
   self->on_receive_context = on_receive_context;
 }
-//----------------------------------------------------------------------------
-// SPI transfer help function
-u8_t sx127x_spi_transfer(sx127x_t *self, u8_t address, u8_t value)
+//-----------------------------------------------------------------------------
+// write SX127x 8-bit register to SPI
+void sx127x_write_reg(sx127x_t *self, u8_t address, u8_t value)
 {
-  u8_t tx_buf[2], rx_buf[2];
-  
-  // prepare TX buffer
-  tx_buf[0] = address;
+  u8_t rx_buf[2], tx_buf[2];
+  tx_buf[0] = address | 0x80;
   tx_buf[1] = value;
-
-  // transfe data over SPI
   self->spi_exchange(rx_buf, tx_buf, 2, self->spi_exchange_context);
-  
-  return rx_buf[1];
 }
 //-----------------------------------------------------------------------------
 // read SX127x 8-bit register from SPI
 u8_t sx127x_read_reg(sx127x_t *self, u8_t address)
 {
-  return sx127x_spi_transfer(self, address & 0x7F, 0xFF);
-}
-//-----------------------------------------------------------------------------
-// write SX127x 8-bit register to SPI
-void sx127x_write_reg(sx127x_t *self, u8_t address, u8_t value)
-{
-  sx127x_spi_transfer(self, address | 0x80, value);
+  u8_t rx_buf[2], tx_buf[2];
+  tx_buf[0] = address & 0x7F;
+  self->spi_exchange(rx_buf, tx_buf, 2, self->spi_exchange_context);
+  return rx_buf[1];
 }
 //----------------------------------------------------------------------------
 // setup SX127x radio module (uses from sx127x_init())
@@ -407,7 +398,7 @@ void sx127x_cad(sx127x_t *self)
 u32_t sx127x_set_frequency(sx127x_t *self, u32_t freq)
 {
   u32_t f, f1, f2, f11, f12, f21, f22;
-  u8_t fmsb, fmid, flsb;
+  u8_t rx_buf[4], tx_buf[4];
 
   // FREQ_MAGIC_1 = 8     // arithmetic shift
   // FREQ_MAGIC_2 = 625   // 5**4
@@ -428,33 +419,33 @@ u32_t sx127x_set_frequency(sx127x_t *self, u32_t freq)
  
   f = f1 + f2; // FIXME: check limits
 
-  fmsb = (u8_t)(f >> 16);
-  fmid = (u8_t)(f >> 8);
-  flsb = (u8_t) f;
-
-  sx127x_write_reg(self, REG_FRF_MSB, fmsb);
-  sx127x_write_reg(self, REG_FRF_MID, fmid);
-  sx127x_write_reg(self, REG_FRF_LSB, flsb);
+  tx_buf[0] = REG_FRF_MSB | 0x80; // first register address with write bit
+  tx_buf[1] = (u8_t)(f >> 16); // MSB
+  tx_buf[2] = (u8_t)(f >> 8);  // MID
+  tx_buf[3] = (u8_t) f;        // LSB
+  self->spi_exchange(rx_buf, tx_buf, 4, self->spi_exchange_context);
 
   // save RF frequency
-  self->freq = ((((u32_t) fmsb) * FREQ_MAGIC_4) << 8) +
-                (((u32_t) fmid) * FREQ_MAGIC_4) +
-               ((((u32_t) flsb) * FREQ_MAGIC_4 + (1<<7)) >> 8);
+  self->freq = ((((u32_t) tx_buf[1]) * FREQ_MAGIC_4) << 8) +
+                (((u32_t) tx_buf[2]) * FREQ_MAGIC_4) +
+               ((((u32_t) tx_buf[3]) * FREQ_MAGIC_4 + (1<<7)) >> 8);
   
   SX127X_DBG("set RF frequency to %lu Hz (code=%lu)", self->freq, f);
 
   return self->freq;
 }
-//----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // get RF frequency [Hz]
 u32_t sx127x_get_frequency(sx127x_t *self)
 {
-  u32_t fmsb = (u32_t) sx127x_read_reg(self, REG_FRF_MSB);
-  u32_t fmid = (u32_t) sx127x_read_reg(self, REG_FRF_MID);
-  u32_t flsb = (u32_t) sx127x_read_reg(self, REG_FRF_LSB);
-  return ((fmsb * FREQ_MAGIC_4) << 8) +
-          (fmid * FREQ_MAGIC_4) +
-         ((flsb * FREQ_MAGIC_4 + (1<<7)) >> 8);
+  u8_t rx_buf[4], tx_buf[4];
+
+  tx_buf[0] = REG_FRF_MSB & 0x7F; // first register address without write bit
+  self->spi_exchange(rx_buf, tx_buf, 4, self->spi_exchange_context);
+
+  return ((((u32_t) rx_buf[1]) * FREQ_MAGIC_4) << 8) +
+          (((u32_t) rx_buf[2]) * FREQ_MAGIC_4) +
+         ((((u32_t) rx_buf[3]) * FREQ_MAGIC_4 + (1<<7)) >> 8);
 }
 //----------------------------------------------------------------------------
 // update band after change RF frequency from one band to another

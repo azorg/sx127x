@@ -6,6 +6,7 @@ CLEAN_FILES := "$(OUT_DIR)/$(OUT_NAME).exe" a.out
 # 1-st way to select source files
 SRCS := \
 	sx127x_test.c \
+	radio.c \
         sx127x/sx127x.c \
         spi/spi.c \
 	stimer/stimer.c \
@@ -14,6 +15,7 @@ SRCS := \
 
 HDRS := \
   	sx127x/sx127x.h \
+	radio.h \
 	spi/spi.h \
 	stimer/stimer.h \
 	sgpio/sgpio.h \

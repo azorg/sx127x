@@ -818,6 +818,7 @@ u32_t sx127x_set_bitrate(sx127x_t *self, u32_t bitrate)
     if (self->mode == SX127X_FSK)
     { // FSK mode
       code    = ((u32_t) (FREQ_OSC*16) + (bitrate >> 1)) / bitrate;
+      code = SX127X_LIMIT(code, 0x200, 0xFFFFF);
       bitrate = ((u32_t) (FREQ_OSC*16) + (code >> 1))    / code;
       frac = (u8_t) (code & 0x0F);
       code >>= 4;
@@ -825,11 +826,11 @@ u32_t sx127x_set_bitrate(sx127x_t *self, u32_t bitrate)
     else
     { // OOK mode
       code    = ((u32_t) FREQ_OSC + (bitrate >> 1)) / bitrate;
+      code = SX127X_LIMIT(code, 0x20, 0xFFFF);
       bitrate = ((u32_t) FREQ_OSC + (code    >> 1)) / code;
       frac = 0;
     }
 
-    code = SX127X_LIMIT(code, 0x20, 0xFFFF); // 488...1000000 bit/s
     
     sx127x_write_reg(self, REG_BITRATE_MSB, (u8_t) (code >> 8));
     sx127x_write_reg(self, REG_BITRATE_LSB, (u8_t) code);

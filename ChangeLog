@@ -1,6 +1,7 @@
 2018.03.28: Alex Zorg <azorg(at)mail.ru>
  * write/read 3 bytes by SPI in set_frequency()/get_frequency() at once
  - remove sx127x_spi_transfer() help funcion
+ + add radio.h/radio.c layer for SBC
 
 2018.03.27: Alex Zorg <azorg(at)mail.ru>
  + add sx127x_dump()

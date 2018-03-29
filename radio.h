@@ -64,8 +64,11 @@ void radio_blink_led();
 // hard reset SX127x radio module
 void radio_reset();
 //----------------------------------------------------------------------------
-// init SX127x radio module 
+// init SX127x radio module hardware layer (before call sx127x_init())
 void radio_init();
+//-----------------------------------------------------------------------------
+// create listen IRQ thread (after sx127x_init())
+void radio_create_irq_thread();
 //-----------------------------------------------------------------------------
 // free SX127x radio module
 void radio_free();

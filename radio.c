@@ -53,7 +53,6 @@ void radio_led_on(bool on)
 {
 #ifdef RADIO_GPIO_LED
   sgpio_set(&gpio_led, on ? 1 : 0);
-  //sgpio_set(&gpio_data, on ? 1 : 0);
 #endif
 }
 //-----------------------------------------------------------------------------
@@ -67,6 +66,14 @@ void radio_blink_led()
   stimer_sleep_ms(20.);
 #else
   printf("RADIO: radio_blink_led()\n");
+#endif
+}
+//-----------------------------------------------------------------------------
+// crystall select for SX127X chip
+static void radio_spi_cs(bool cs)
+{
+#ifdef RADIO_GPIO_CS
+  sgpio_set(&gpio_cs, cs ? 0 : 1);
 #endif
 }
 //-----------------------------------------------------------------------------
@@ -123,15 +130,7 @@ static void *thread_irq_fn(void *arg)
   return NULL;
 }
 //-----------------------------------------------------------------------------
-// crystall select for SX127X chip
-static void radio_spi_cs(bool cs)
-{
-#ifdef RADIO_GPIO_CS
-  sgpio_set(&gpio_cs, cs ? 0 : 1);
-#endif
-}
-//-----------------------------------------------------------------------------
-// init SX127x radio module 
+// init SX127x radio module hardware layer (before call sx127x_init())
 void radio_init()
 {
   int retv;
@@ -147,65 +146,50 @@ void radio_init()
   if (retv != 0) exit(EXIT_FAILURE);
 
   // setup GPIOs
-  if (1)
-  {
 #ifdef RADIO_GPIO_IRQ
-    sgpio_unexport(RADIO_GPIO_IRQ); // FIXME: it is important! Why?
-    sgpio_export(RADIO_GPIO_IRQ);
-#endif
-
-#ifdef RADIO_GPIO_RESET
-    sgpio_export(RADIO_GPIO_RESET);
-#endif
-
-#ifdef RADIO_GPIO_CS
-    sgpio_export(RADIO_GPIO_CS);
-#endif
-
-#ifdef RADIO_GPIO_DATA
-    sgpio_export(RADIO_GPIO_DATA);
-#endif
-
-#ifdef RADIO_GPIO_LED
-    sgpio_export(RADIO_GPIO_LED);
-#endif
-  }
-
-#ifdef RADIO_GPIO_IRQ
+  sgpio_unexport(RADIO_GPIO_IRQ); // FIXME: it is important! Why?
+  sgpio_export(RADIO_GPIO_IRQ);
   sgpio_init(&gpio_irq,   RADIO_GPIO_IRQ);
   sgpio_mode(&gpio_irq,   SGPIO_DIR_IN,  SGPIO_EDGE_RISING);
-
   retv = sgpio_get(&gpio_irq);
   printf("RADIO: first sgpio_get(&gpio_irq) return %d\n", retv); // FIXME
 #endif
-  
+
 #ifdef RADIO_GPIO_RESET
+  sgpio_export(RADIO_GPIO_RESET);
   sgpio_init(&gpio_reset, RADIO_GPIO_RESET);
   sgpio_mode(&gpio_reset, SGPIO_DIR_OUT, SGPIO_EDGE_NONE);
+  sgpio_set(&gpio_reset, 1);
 #endif
 
 #ifdef RADIO_GPIO_CS
+  sgpio_export(RADIO_GPIO_CS);
   sgpio_init(&gpio_cs,    RADIO_GPIO_CS);
   sgpio_mode(&gpio_cs,    SGPIO_DIR_OUT, SGPIO_EDGE_NONE);
   radio_spi_cs(false);
 #endif
 
 #ifdef RADIO_GPIO_DATA
+  sgpio_export(RADIO_GPIO_DATA);
   sgpio_init(&gpio_data,  RADIO_GPIO_DATA);
   sgpio_mode(&gpio_data,  SGPIO_DIR_OUT, SGPIO_EDGE_NONE);
   radio_data_on(false);
 #endif
-  
-#ifdef RADIO_GPIO_DATA
+
+#ifdef RADIO_GPIO_LED
+  sgpio_export(RADIO_GPIO_LED);
   sgpio_init(&gpio_led,   RADIO_GPIO_LED);
   sgpio_mode(&gpio_led,   SGPIO_DIR_OUT, SGPIO_EDGE_NONE);
   radio_led_on(false);
 #endif
-  
+
   // hard reset SX127x radio module
   radio_reset();
-  
-  // creade listen IRQ threads
+}
+//-----------------------------------------------------------------------------
+// create listen IRQ thread (after sx127x_init())
+void radio_create_irq_thread()
+{
   vsthread_create(32, SCHED_FIFO, &thread_irq, thread_irq_fn, NULL);
 }
 //-----------------------------------------------------------------------------
@@ -222,49 +206,31 @@ void radio_free()
   // unexport GPIOs
 #ifdef RADIO_GPIO_LED
   sgpio_free(&gpio_led);
+  sgpio_unexport(RADIO_GPIO_LED);
 #endif
 
 #ifdef RADIO_GPIO_DATA
   sgpio_free(&gpio_data);
+  sgpio_unexport(RADIO_GPIO_DATA);
 #endif
 
 #ifdef RADIO_GPIO_CS
   sgpio_free(&gpio_cs);
+  sgpio_unexport(RADIO_GPIO_CS);
 #endif
 
 #ifdef RADIO_GPIO_RESET
   sgpio_free(&gpio_reset);
+  sgpio_unexport(RADIO_GPIO_RESET);
 #endif
 
 #ifdef RADIO_GPIO_IRQ
   sgpio_free(&gpio_irq);
+  sgpio_unexport(RADIO_GPIO_IRQ);
 #endif
 
-  if (1)
-  {
-#ifdef RADIO_GPIO_LED
-    sgpio_unexport(RADIO_GPIO_LED);
-#endif
-
-#ifdef RADIO_GPIO_DATA
-    sgpio_unexport(RADIO_GPIO_DATA);
-#endif
-
-#ifdef RADIO_GPIO_CS
-    sgpio_unexport(RADIO_GPIO_CS);
-#endif
-
-#ifdef RADIO_GPIO_RESET
-    sgpio_unexport(RADIO_GPIO_RESET);
-#endif
-
-#ifdef RADIO_GPIO_IRQ
-    sgpio_unexport(RADIO_GPIO_IRQ);
-#endif
-  }
-  
   // join IRQ thread
-  vsthread_join(thread_irq, NULL);
+  vsthread_join(thread_irq, NULL); // FIXME: is it realy necessary?
 }
 //-----------------------------------------------------------------------------
 // SPI exchange wrapper function (return number or RX bytes)
@@ -275,19 +241,9 @@ int radio_spi_exchange(
   void *context)      // optional SPI context or NULL
 {
   int retv;
-
-  radio_spi_cs(true);  // select crystall
+  radio_spi_cs(true);
   retv = spi_exchange(&spi, (char*) rx_buf, (const char*) tx_buf, (int) len);
-  radio_spi_cs(false); // unselect crystall
-
-#if 0
-  // FIXME SPI debug
-  printf("RADIO: spi_exchange([0x%02X, 0x%02X], len=%d) "
-         "return ([0x%02X, 0x%02X], retv=%d)\n",
-         tx_buf[0], tx_buf[1], (int) len,
-         rx_buf[0], rx_buf[1], (int) retv);
-#endif
-
+  radio_spi_cs(false);
   return retv;
 }
 //----------------------------------------------------------------------------

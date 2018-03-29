@@ -108,6 +108,7 @@ int main()
   int retv, radio_mode = RADIO_MODE;
   u8_t reg;
   u32_t freq;
+  i16_t rssi;
  
   // set "real-time" priority
   if (1)
@@ -124,7 +125,7 @@ int main()
   if (demo_mode == 2)
     radio_mode = SX127X_OOK; // OOK in morse beeper demo
 
-  // init SX127x radio module hardware layer
+  // init SX127x radio module hardware layer (before call sx127x_init())
   radio_init();
 
   // setup SX127x module
@@ -137,6 +138,9 @@ int main()
       (void*) NULL,       // optional SPI exchange context
       (void*) NULL);      // optional on_receive() context
   printf(">>> sx127x_init() return %d\n", retv);
+
+  // create listen IRQ thread (after sx127x_init())
+  radio_create_irq_thread();
 
   // common settings
   sx127x_set_frequency(&radio, 434000000); // RF frequency [Hz]
@@ -175,6 +179,9 @@ int main()
   reg = sx127x_get_rx_gain(&radio);
   printf(">>> sx127x_get_rx_gain() return %d\n", (int) reg);
 
+  rssi = sx127x_get_rssi(&radio);
+  printf(">>> RSSI = %d dBm\n", rssi); 
+
   // dump registers
   //sx127x_dump(&radio);
 
@@ -188,7 +195,6 @@ int main()
   { // receiver
     // set !!!AGAIN!!! callback on receive packet (Lora/FSK/OOK)
     sx127x_on_receive(&radio, on_receive, NULL);
-
     // go to receive mode
 #ifdef FIXED
     sx127x_receive(&radio, 6); // 6=size("Hello!")
@@ -198,8 +204,8 @@ int main()
   }
   else if (demo_mode == 2)
   { // morse beeper
-    //sx127x_set_fast_hop(&radio, true); // FIXME
     sx127x_continuous(&radio, true); // switch to continuous mode
+    //sx127x_set_fast_hop(&radio, true); // FIXME
   }
 
   // setup timer

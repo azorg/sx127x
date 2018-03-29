@@ -481,13 +481,11 @@ u8_t sx127x_get_rx_gain(sx127x_t *self)
 // get RSSI [dB]
 i16_t sx127x_get_rssi(sx127x_t *self)
 {
-  // FIXME
   if (self->mode == SX127X_LORA) // LoRa mode
     return ((i16_t) sx127x_read_reg(self, REG_PKT_RSSI_VALUE)) -
            (self->freq < 600000000 ? 164 : 157); // F_LF<=525, F_HF>=779 MHz
   else // FSK/OOK mode
     return (- (i16_t) sx127x_read_reg(self, REG_RSSI_VALUE)) >> 1;
-
 }
 //----------------------------------------------------------------------------
 // get SNR [dB] (LoRa)
@@ -1011,7 +1009,7 @@ i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size, bool fixed)
     // wait for TX done, standby automatically on TX_DONE
     while ((sx127x_read_reg(self, REG_IRQ_FLAGS) & IRQ_TX_DONE) == 0)
     {
-      // FIXME: check timeout
+      // FIXME: check timeout, save energy
     }
 
     // clear IRQ's
@@ -1039,7 +1037,7 @@ i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size, bool fixed)
     cnt = 1000000000; // FIXME: callibrate timeout
     while ((sx127x_read_reg(self, REG_IRQ_FLAGS_2) & IRQ2_FIFO_EMPTY) == 0)
     {
-      // FIXME: check timeout
+      // FIXME: check timeout, save energy
 #if 0
       SX127X_DBG("#1 RegIrqFlags1=0x%02X",
                  sx127x_read_reg(self, REG_IRQ_FLAGS_1));
@@ -1077,14 +1075,14 @@ i16_t sx127x_send(sx127x_t *self, const u8_t *data, i16_t size, bool fixed)
     // wait `TxRaedy` (bit 5 in `RegIrqFlags1`)
     //while ((sx127x_read_reg(self, REG_IRQ_FLAGS_1) & IRQ1_TX_READY) == 0)
     //{
-    //  // FIXME: check timeout
+    //  // FIXME: check timeout, save energy
     //}
 
     // wait `PacketSent` (bit 3 in `RegIrqFlags2`)
     cnt = 1000000000; // FIXME: callibrate timeout
     while ((sx127x_read_reg(self, REG_IRQ_FLAGS_2) & IRQ2_PACKET_SENT) == 0)
     {
-      // FIXME: check timeout
+      // FIXME: check timeout, save energy
 #if 0
       SX127X_DBG("#2 RegIrqFlags1=0x%02X",
                  sx127x_read_reg(self, REG_IRQ_FLAGS_1));
@@ -1197,7 +1195,7 @@ void sx127x_irq_handler(sx127x_t *self)
     SX127X_DBG("IRQ on DIO0 (LoRa) by `RxDone`: RegIrqFlags=0x%02X",
        	       irq_flags);
 
-    // check `PayloadCrcError` bit
+    // get `PayloadCrcError` bit
     crc_ok = !(irq_flags & IRQ_PAYLOAD_CRC_ERROR);
 
     // set FIFO address to current RX address
@@ -1228,7 +1226,7 @@ void sx127x_irq_handler(sx127x_t *self)
     SX127X_DBG("IRQ on DIO0 (FSK/OOK) by `PayloadReady`: "
                "RegIrqFlags2=0x%02X", irq_flags2);
   
-    // check `CrcOk` bit
+    // get `CrcOk` bit
     crc_ok = !!(irq_flags2 & IRQ2_CRC_OK);
 
     // read payload length
@@ -1238,15 +1236,14 @@ void sx127x_irq_handler(sx127x_t *self)
       payload_len = sx127x_read_reg(self, REG_PAYLOAD_LEN); // fixed length
   }
   
-  // read FIFO
+  // read data from FIFO
   for (i = 0; i < payload_len; i++)
     self->payload[i] = sx127x_read_reg(self, REG_FIFO);
 
   // run callback
   if (self->on_receive != (void (*)(sx127x_t*, u8_t*, u8_t, bool, void*)) NULL)
     self->on_receive(self, self->payload, payload_len,
-                     self->crc ? crc_ok : true,
-                     self->on_receive_context);
+                     crc_ok, self->on_receive_context);
 }
 //----------------------------------------------------------------------------
 // dump registers for debug

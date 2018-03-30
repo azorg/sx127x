@@ -16,7 +16,10 @@
 #define DEMO_MODE 1 // 0 - transmitter, 1 - receiver, 2 - morse beeper
 
 // radio mode
-#define RADIO_MODE 1 // 0 - LoRa, 1 - FSK, 2 - OOK
+#define RADIO_MODE 0 // 0 - LoRa, 1 - FSK, 2 - OOK
+
+// LoRa settings 1..5
+#define LORA_VARIANT 1
 
 // timer interval
 #define TIMER_INTERVAL 1000 // ms
@@ -143,8 +146,8 @@ int main()
   radio_create_irq_thread();
 
   // common settings
-  sx127x_set_frequency(&radio, 434000000); // RF frequency [Hz]
-  sx127x_set_power_dbm(&radio, 10);        // power [dBm]
+  sx127x_set_frequency(&radio, 433000000); // RF frequency [Hz]
+  sx127x_set_power_dbm(&radio, 17);        // power [dBm]
   sx127x_set_high_power(&radio, false);    // add +3 dB on PA_BOOST pin
   sx127x_set_ocp(&radio, 120, true);       // set OCP trimming [mA]
   sx127x_enable_crc(&radio, true, true);   // CRC, CrcAutoClearOff
@@ -152,19 +155,45 @@ int main()
 
   if (sx127x_is_lora(&radio))
   { // LoRa settings
-    sx127x_set_bw(      &radio, 250000); // BW: 78000...500000 Hz
-    sx127x_set_cr(      &radio, 5);      // CR: 5..8
-    sx127x_set_sf(      &radio, 7);      // SF: 6...12
-    sx127x_set_ldro(    &radio, false);  // Low Datarate Optimize
-    sx127x_set_preamble(&radio, 6);      // 6..65535 (8 by default)
-    sx127x_set_sw(      &radio, 0x12);   // SW allways 0x12
-    sx127x_impl_hdr(    &radio, false);  // explicit header
+    int v = LORA_VARIANT;
+
+    sx127x_set_cr(&radio, 8);       // CR: 5..8
+    sx127x_set_preamble(&radio, 8); // 6..65535 (8 by default)
+    sx127x_set_sw(&radio, 0x12);    // SW allways 0x12
+    sx127x_impl_hdr(&radio, false); // explicit header
+    sx127x_set_ldro(&radio, true);  // Low Datarate Optimize
+
+    if (v == 1)
+    {
+      sx127x_set_bw(&radio, 125000); // BW: 78000...500000 Hz
+      sx127x_set_sf(&radio, 11);     // SF: 6...12
+    }
+    else if (v == 2)
+    {
+      sx127x_set_bw(&radio, 62500); // BW: 78000...500000 Hz
+      sx127x_set_sf(&radio, 9);     // SF: 6...12
+    }
+    else if (v == 3)
+    {
+      sx127x_set_bw(&radio, 500000); // BW: 78000...500000 Hz
+      sx127x_set_sf(&radio, 12);     // SF: 6...12
+    }
+    else if (v == 4)
+    {
+      sx127x_set_bw(&radio, 250000); // BW: 78000...500000 Hz
+      sx127x_set_sf(&radio, 10);     // SF: 6...12
+    }
+    else if (v == 5)
+    {
+      sx127x_set_bw(&radio, 500000); // BW: 78000...500000 Hz
+      sx127x_set_sf(&radio, 11);     // SF: 6...12
+    }
   }
   else
   { // FSK/OOK settings
-    sx127x_set_bitrate(&radio, 4800);  // bit/s
-    sx127x_set_fdev(   &radio, 5000);  // frequency deviation [Hz]
-    sx127x_set_rx_bw(  &radio, 10400); // RX BW [Hz]
+    sx127x_set_bitrate(&radio, 500);   // bit/s
+    sx127x_set_fdev(   &radio, 700);   // frequency deviation [Hz]
+    sx127x_set_rx_bw(  &radio, 2600);  // RX BW [Hz]
     sx127x_set_afc_bw( &radio, 2600);  // AFC BW [Hz]
     sx127x_set_afc(    &radio, true);  // AFC on/off
     sx127x_set_fixed(  &radio, false); // fixed packet size or variable

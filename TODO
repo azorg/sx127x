@@ -2,4 +2,5 @@
 [-] add LoRa frequency hopping (`RegHopPeriod`)
 [-] add RX single mode in LoRa to save battery energy
 [+] fix TX random block in OOK mode
+[-] LoRa SNR???
 

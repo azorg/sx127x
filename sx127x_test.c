@@ -48,8 +48,8 @@ static void on_receive(
     void *context)      // optional context
 {
   int i;
-  int16_t rssi = sx127x_get_rssi(&radio);
-  int16_t snr  = sx127x_get_snr(&radio);
+  i16_t rssi = sx127x_get_rssi(&radio);
+  i16_t snr  = sx127x_get_snr(&radio);
   
   radio_blink_led();
   printf("*** Received message:\n");
@@ -208,6 +208,7 @@ int main()
   reg = sx127x_get_rx_gain(&radio);
   printf(">>> sx127x_get_rx_gain() return %d\n", (int) reg);
 
+  // get RSSI
   rssi = sx127x_get_rssi(&radio);
   printf(">>> RSSI = %d dBm\n", rssi); 
 

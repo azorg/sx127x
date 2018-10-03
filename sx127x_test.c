@@ -48,7 +48,7 @@ static void on_receive(
     void *context)      // optional context
 {
   int i;
-  int16_t rssi = sx127x_get_rssi(&radio);
+  int16_t rssi = sx127x_get_pkt_rssi(&radio);
   int16_t snr  = sx127x_get_snr(&radio);
   
   radio_blink_led();

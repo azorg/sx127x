@@ -102,8 +102,9 @@
 #define REG_IRQ_FLAGS_MASK  0x11 // Optional IRQ flag mask
 #define REG_IRQ_FLAGS       0x12 // IRQ flags
 #define REG_RX_NB_BYTES     0x13 // Number of received bytes
+#define REG_PKT_SNR_VALUE   0x19 // SNR of last packet
 #define REG_PKT_RSSI_VALUE  0x1A // RSSI of last packet
-#define REG_PKT_SNR_VALUE   0x1B // Current RSSI
+#define REG_LR_RSSI_VALUE   0x1B // Current RSSI
 #define REG_MODEM_CONFIG_1  0x1D // Modem PHY config 1
 #define REG_MODEM_CONFIG_2  0x1E // Modem PHY config 2
 #define REG_PREAMBLE_MSB    0x20 // Size of preamble (MSB)
